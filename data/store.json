@@ -1,0 +1,69 @@
+{
+  "users": {
+    "999": {
+      "id": 999,
+      "firstName": "Banned User",
+      "joinedAt": "2025-11-27T08:38:06.110Z",
+      "lastActive": "2025-11-27T08:38:06.110Z",
+      "isBanned": false,
+      "downloadHistory": [],
+      "credits": {
+        "used": 0,
+        "lastReset": "2025-11-28T05:29:40.548Z"
+      },
+      "timezone": 0,
+      "activePlaylist": null
+    },
+    "8563304469": {
+      "id": 8563304469,
+      "firstName": "F",
+      "joinedAt": "2025-11-26T20:25:39.467Z",
+      "lastActive": "2025-11-28T06:18:24.749Z",
+      "isBanned": true,
+      "downloadHistory": [
+        {
+          "title": "Video",
+          "url": "https://www.youtube.com/shorts/98gXMJ-GtLY",
+          "format": "136",
+          "date": "2025-11-26T20:26:58.454Z"
+        },
+        {
+          "title": "Unknown",
+          "url": "https://www.youtube.com/shorts/98gXMJ-GtLY",
+          "format": "best",
+          "date": "2025-11-28T05:45:13.826Z"
+        },
+        {
+          "title": "Unknown",
+          "url": "https://www.youtube.com/shorts/98gXMJ-GtLY",
+          "format": "audio",
+          "date": "2025-11-28T05:53:25.684Z"
+        }
+      ],
+      "credits": {
+        "used": 3,
+        "lastReset": "2025-11-28T05:52:29.354Z"
+      },
+      "timezone": 2,
+      "activePlaylist": null
+    },
+    "7582817665": {
+      "id": 7582817665,
+      "firstName": ".",
+      "joinedAt": "2025-11-26T20:29:04.692Z",
+      "lastActive": "2025-11-26T21:18:02.366Z",
+      "isBanned": false,
+      "downloadHistory": [],
+      "credits": {
+        "used": 0,
+        "lastReset": "2025-11-28T05:29:40.548Z"
+      },
+      "timezone": 0,
+      "activePlaylist": null
+    }
+  },
+  "scheduledTasks": [],
+  "settings": {
+    "maintenance": false
+  }
+}

@@ -1,0 +1,9 @@
+Role: Senior TypeScript Developer.
+
+Rules:
+1. ALWAYS read `SYSTEM_CONTEXT.md` before proposing changes.
+2. ALWAYS use `message_thread_id` in Telegram replies to support topics.
+3. NEVER put long URLs in callback data; use `CallbackStateManager` (UUIDs).
+4. Maintain Modular Architecture (Service Pattern). Do not add logic to `BotHandler.ts` directly; use `AdminService`, `UserService`, or `DownloadService`.
+5. Use `logger` for all errors and important events.
+6. Strict Types: Avoid `any` where possible.
