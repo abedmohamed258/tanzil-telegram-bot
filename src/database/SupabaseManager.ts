@@ -476,4 +476,63 @@ export class SupabaseManager {
     // or just to minimize code changes in index.ts during shutdown.
     logger.info('💾 Supabase: All data is already persisted (Real-time)');
   }
+
+  /**
+   * Get comprehensive statistics for admin dashboard
+   */
+  public async getStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    totalDownloads: number;
+    successfulDownloads: number;
+    failedDownloads: number;
+    creditsUsed: number;
+    totalBytesDownloaded: number;
+  }> {
+    try {
+      const { data: users, error: usersError } = await this.supabase
+        .from('users')
+        .select('id, last_active, credits_used')
+        .not('last_active', 'is', null);
+
+      if (usersError) throw usersError;
+
+      const totalUsers = users?.length || 0;
+      const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+      const activeUsers = users?.filter(u => u.last_active && u.last_active > oneHourAgo).length || 0;
+      const creditsUsed = users?.reduce((sum, u) => sum + (u.credits_used || 0), 0) || 0;
+
+      const { data: downloads, error: downloadsError } = await this.supabase
+        .from('download_records')
+        .select('success, file_size');
+
+      if (downloadsError) throw downloadsError;
+
+      const totalDownloads = downloads?.length || 0;
+      const successfulDownloads = downloads?.filter(d => d.success).length || 0;
+      const failedDownloads = totalDownloads - successfulDownloads;
+      const totalBytesDownloaded = downloads?.reduce((sum, d) => sum + (d.file_size || 0), 0) || 0;
+
+      return {
+        totalUsers,
+        activeUsers,
+        totalDownloads,
+        successfulDownloads,
+        failedDownloads,
+        creditsUsed,
+        totalBytesDownloaded,
+      };
+    } catch (error) {
+      logger.error('Failed to get stats', { error });
+      return {
+        totalUsers: 0,
+        activeUsers: 0,
+        totalDownloads: 0,
+        successfulDownloads: 0,
+        failedDownloads: 0,
+        creditsUsed: 0,
+        totalBytesDownloaded: 0,
+      };
+    }
+  }
 }

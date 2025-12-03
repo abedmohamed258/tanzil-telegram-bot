@@ -38,17 +38,38 @@ export class SystemAdmin {
     messageId?: number,
   ): Promise<void> {
     const isMaintenanceMode = await this.storage.isMaintenanceMode();
-    const dashboardMsg = `🛠 *Admin Command Center*\n🚧 Maintenance: ${isMaintenanceMode ? 'ON 🔴' : 'OFF 🟢'}\n\nSelect an action below:`;
+    const stats = await this.storage.getStats();
+    const queueLength = this.queue.getQueueLength();
+    const scheduledTasks = await this.storage.getScheduledTasks();
+    
+    const dashboardMsg = `🛠 *لوحة التحكم الرئيسية*
+━━━━━━━━━━━━━━━━━━━
+📊 *إحصائيات النظام:*
+• المستخدمون: ${stats.totalUsers || 0}
+• التحميلات: ${stats.totalDownloads || 0}
+• الرصيد المستخدم: ${stats.creditsUsed || 0}
+• قائمة الانتظار: ${queueLength}
+• المهام المجدولة: ${scheduledTasks.length || 0}
+
+🚧 *الحالة:*
+• الصيانة: ${isMaintenanceMode ? '🔴 مفعّل' : '🟢 معطّل'}
+• البوت: 🟢 يعمل بشكل طبيعي
+━━━━━━━━━━━━━━━━━━━
+
+اختر العملية:`;
 
     const options = {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [
           [
-            { text: '📊 System Status', callback_data: 'admin:sys' },
-            { text: '👥 Users List', callback_data: 'admin:users' },
+            { text: '📊 تفاصيل النظام', callback_data: 'admin:sys' },
+            { text: '👥 المستخدمون', callback_data: 'admin:users' },
           ],
-          [{ text: '📅 Scheduled Tasks', callback_data: 'admin:scheduled' }],
+          [
+            { text: '📈 مراقبة الأنشطة', callback_data: 'admin:live_activity' },
+            { text: '📅 المهام المجدولة', callback_data: 'admin:scheduled' },
+          ],
           [
             {
               text: isMaintenanceMode
@@ -268,6 +289,55 @@ export class SystemAdmin {
 
   public async runCleanup(): Promise<void> {
     await this.fileManager.cleanupOldFiles(0);
+  }
+
+  public async showLiveActivityMonitor(
+    chatId: number,
+    messageId: number,
+  ): Promise<void> {
+    const stats = await this.storage.getStats();
+    const queueLength = this.queue.getQueueLength();
+    const users = await this.storage.getAllUsers();
+    const activeUsers = users.filter(u => new Date().getTime() - new Date(u.lastActive || 0).getTime() < 3600000).length;
+    
+    const activityMsg = `📈 *مراقبة الأنشطة الحية*
+━━━━━━━━━━━━━━━━━━━━━━━
+⚡ *النشاط الفوري:*
+• المستخدمون النشطون: ${activeUsers}
+• في قائمة الانتظار: ${queueLength}
+• التحميلات الناجحة: ${stats.successfulDownloads || 0}
+• الأخطاء: ${stats.failedDownloads || 0}
+
+📊 *الإجماليات:*
+• إجمالي التحميلات: ${stats.totalDownloads || 0}
+• إجمالي الرصيد المستخدم: ${stats.creditsUsed || 0}
+• إجمالي البايتات: ${this.formatBytes(stats.totalBytesDownloaded || 0)}
+
+⏰ *وقت التحديث:* ${new Date().toLocaleTimeString('ar-SA')}
+━━━━━━━━━━━━━━━━━━━━━━━
+
+اضغط "تحديث" لرؤية آخر المستجدات`;
+
+    await this.editMessage(chatId, messageId, activityMsg, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🔄 تحديث', callback_data: 'admin:live_activity' },
+            { text: '📊 الإحصائيات', callback_data: 'admin:sys' },
+          ],
+          [{ text: '🔙 رجوع', callback_data: 'admin:back' }],
+        ],
+      },
+    });
+  }
+
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   }
 
   private async sendToChat(

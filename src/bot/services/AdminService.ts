@@ -407,6 +407,12 @@ export class AdminService {
           messageId,
         );
         break;
+      case 'live_activity':
+        await this.systemAdmin.showLiveActivityMonitor(
+          chatId,
+          messageId,
+        );
+        break;
     }
   }
 
