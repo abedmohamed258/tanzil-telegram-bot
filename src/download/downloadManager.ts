@@ -87,7 +87,8 @@ export class DownloadManager {
       '--force-ipv4',
       '--no-warnings',
       '--socket-timeout',
-      '10',
+      '5',
+      '--skip-download',
       validUrl,
     ];
 

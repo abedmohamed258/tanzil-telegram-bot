@@ -251,7 +251,7 @@ export class MediaDownloader {
     updateStatus: (text: string, showCancelButton?: boolean) => Promise<void>,
   ) {
     let lastUpdate = 0;
-    const MIN_UPDATE_INTERVAL = 1000; // Faster updates (was 3000ms)
+    const MIN_UPDATE_INTERVAL = 500; // Ultra-fast updates
     const loadingPhrases = [
       '🚀 جاري المعالجة...',
       '⬇️ جاري التحميل...',
