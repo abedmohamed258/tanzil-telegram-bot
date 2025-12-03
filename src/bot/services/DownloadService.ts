@@ -631,7 +631,7 @@ export class DownloadService {
 
   private async sendToChat(
     chatId: number,
-    threadId: number | undefined,
+    _threadId: number | undefined,
     text: string,
     options: any = {},
   ): Promise<any> {

@@ -28,7 +28,7 @@ export class UserManagement {
 
   public async showUserProfile(
     chatId: number,
-    threadId: number | undefined,
+    _threadId: number | undefined,
     targetId: number,
     messageIdToEdit?: number,
   ): Promise<void> {
@@ -181,7 +181,7 @@ export class UserManagement {
 
   public async executeDM(
     chatId: number,
-    threadId: number | undefined,
+    _threadId: number | undefined,
     targetId: number,
     text: string,
   ): Promise<void> {

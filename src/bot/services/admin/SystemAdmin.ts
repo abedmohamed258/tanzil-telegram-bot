@@ -34,7 +34,7 @@ export class SystemAdmin {
 
   public async showAdminDashboard(
     chatId: number,
-    threadId?: number,
+    _threadId?: number,
     messageId?: number,
   ): Promise<void> {
     const isMaintenanceMode = await this.storage.isMaintenanceMode();
