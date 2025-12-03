@@ -1,256 +1,252 @@
-# Tanzil Telegram Bot
+# 🌌 Tanzil - The Cosmic Downloader
 
 <div align="center">
-  <img src="logo.png" alt="Tanzil Bot Logo" width="200"/>
-  
-  <p><strong>بوت تليجرام لتحميل الفيدي وهات من مواقع متعددة</strong></p>
-  
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
-  [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+  <img src="logo.png" alt="Tanzil Bot Logo" width="400"/>
 </div>
 
----
+> **The Ultimate Telegram Bot for Downloading Content from Across the Digital Universe.**
 
-## 📋 المحتويات
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/yourusername/tanzil-bot)
+[![Code Coverage](https://img.shields.io/badge/coverage-70%25-yellow.svg)](https://github.com/yourusername/tanzil-bot)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-purple.svg)](CODE_OF_CONDUCT.md)
 
-- [نظرة عامة](#-نظرة-عامة)
-- [المميزات](#-المميزات)
-- [المتطلبات](#-المتطلبات)
-- [التثبيت](#-التثبيت)
-- [التكوين](#-التكوين)
-- [التشغيل](#-التشغيل)
-- [النشر على Render](#-النشر-على-render)
-- [البنية المعمارية](#-البنية-المعمارية)
-- [الملفات الرئيسية](#-الملفات-الرئيسية)
+**Tanzil** is not just a bot; it's a high-performance, modular, and aesthetically pleasing engine designed to fetch videos, audio, and stories from over 100+ platforms including YouTube, TikTok, Instagram, and Telegram itself.
 
 ---
 
-## 🎯 نظرة عامة
+## ✨ Cosmic Features
 
-**Tanzil** هو بوت تليجرام مبني بـ TypeScript يتيح للمستخدمين تحميل الفيديوهات والصوتيات من مواقع متعددة باستخدام `yt-dlp`. البوت مُحسّن خصيصاً للعمل على **Render Free Tier** مع قيود الذاكرة (512MB RAM).
+### 🚀 Core Capabilities
 
----
+- **Universal Downloader**: Powered by `yt-dlp` to support virtually any video site.
+- **Telegram Stories**: Download stories from public and private channels (via MTProto).
+- **Smart Quality Selection**: Auto-selects the best quality or lets you choose (1080p, 720p, Audio).
+- **Playlist Support**: Batch download entire playlists with a single click.
 
-## ✨ المميزات
+### 💎 User Experience
 
-- ✅ **تحميل من مواقع متعددة**: YouTube, Facebook, Twitter/X, Instagram, TikTok, Vimeo, Dailymotion
-- ✅ **خيارات جودة متعددة**: اختر الجودة المناسبة لك
-- ✅ **تحميل الصوت فقط**: استخرج الصوت بصيغة MP3
-- ✅ **نظام طابور ذكي**: معالجة الطلبات بشكل منظم (حد أقصى 2 تحميلات متزامنة)
-- ✅ **مراقبة الموارد**: Circuit breaker لمنع استهلاك الذاكرة الزائد
-- ✅ **دعم Webhook & Polling**: مرونة في طريقة الاتصال بـ Telegram
-- ✅ **إعادة المحاولة التلقائية**: 3 محاولات عند فشل التحميل
-- ✅ **تنظيف تلقائي**: حذف الملفات المؤقتة فوراً بعد الإرسال
+- **Cosmic UI**: A beautiful, emoji-rich interface that feels premium.
+- **Smooth Progress**: Real-time, sleek progress bars (`▰▰▰▱▱`).
+- **Scheduling**: Schedule downloads for later (e.g., "Download this in 1 hour").
+- **Timezone Aware**: Auto-detects user timezone for accurate scheduling.
 
----
+### 🛡️ Robust & Secure
 
-## 📦 المتطلبات
-
-- **Node.js** >= 18.0.0
-- **Python3** (لـ yt-dlp)
-- **FFmpeg** (لدمج الصوت والصورة)
-- **yt-dlp** (سيتم تثبيته عبر pip3)
-- حساب بوت على Telegram (احصل على Token من [@BotFather](https://t.me/botfather))
+- **Credit System**: Daily limits to prevent abuse and manage server load.
+- **Admin Dashboard**: Full control panel for banning users, broadcasting messages, and viewing stats.
+- **Hard Ban System**: Permanent bans for violators.
+- **Graceful Shutdown**: Safe process termination ensuring no data loss.
 
 ---
 
-## 🛠 التثبيت
+## 🏗️ Architecture
 
-### 1. استنساخ المشروع
+Tanzil is built with a modular architecture for scalability and maintainability.
+
+```mermaid
+graph TD
+    A[Telegram User] -->|Message| B(BotHandler)
+    B --> C{Router}
+    C -->|/start, Settings| D[UserService]
+    C -->|Links| E[DownloadService]
+    C -->|Stories| F[StoryService]
+    C -->|Admin| G[AdminService]
+
+    E --> H[DownloadManager]
+    H -->|yt-dlp| I[External Platforms]
+
+    F --> J[Telegram Client]
+    J -->|MTProto| K[Telegram API]
+
+    D & E & F & G --> L[SupabaseManager]
+    L --> M[(Supabase DB)]
+```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** 18+
+- **yt-dlp** (must be in PATH)
+- **FFmpeg** (must be in PATH)
+- **Supabase Account** (for database)
+
+### Installation
+
+1.  **Clone the Galaxy:**
+
+    ```bash
+    git clone https://github.com/yourusername/tanzil-bot.git
+    cd tanzil-bot
+    ```
+
+2.  **Install Dependencies:**
+
+    ```bash
+    npm install
+    ```
+
+3.  **Configure Environment:**
+
+    ```bash
+    cp .env.example .env
+    # Edit .env with your tokens and keys
+    ```
+
+4.  **Generate Session (Optional - For Stories):**
+
+    ```bash
+    node generate-session.js
+    ```
+
+5.  **Ignition:**
+    ```bash
+    npm run build
+    npm start
+    ```
+
+---
+
+## 🛡️ Admin Commands
+
+Admins can manage the bot from the configured admin group:
+
+### User Management
+
+- `/profile <user_id>` - View detailed user profile
+- `/block <user_id> <duration>h <reason>` - Temporarily block user
+- `/ban <user_id> <reason>` - Permanently ban user
+- `/unblock <user_id>` - Unblock a user
+- `/isblocked <user_id>` - Check if user is blocked
+
+### Bot Control
+
+- `/stats` - View system statistics and performance
+- `/broadcast <message>` - Send message to all users
+- `/send <user_id> <message>` - Send direct message to specific user
+- `/maintenance` - Toggle maintenance mode
+- `/forceclean` - Force cleanup of temp files
+
+### Monitoring
+
+All bot events are logged to designated topics in the admin group:
+
+- **General**: User interactions and commands
+- **Control**: Admin actions
+- **Logs**: Download events and scheduling
+- **Errors**: Error tracking and debugging
+
+See [docs/configuration.md](docs/configuration.md) for admin group setup.
+
+---
+
+## 📚 Documentation
+
+- [Configuration Guide](docs/configuration.md) - Complete environment setup
+- [Database Setup](docs/database-setup.md) - Supabase configuration
+- [Deployment Guide](docs/RENDER_DEPLOYMENT.md) - Deploy to Render (Arabic)
+- [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
+- [Code of Conduct](CODE_OF_CONDUCT.md) - Community guidelines
+- [Security Policy](SECURITY.md) - Report vulnerabilities
+
+---
+
+## 🧪 Testing
+
+Tanzil Bot has comprehensive test coverage including unit tests and property-based tests.
 
 ```bash
-git clone https://github.com/your-username/tanzil-bot.git
-cd tanzil-bot
+# Run all tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+
+# Run specific test file
+npm test -- blockService.test.ts
 ```
 
-### 2. تثبيت المكتبات
+**Test Coverage:**
 
-```bash
-npm install
-```
-
-### 3. إعداد البيئة
-
-```bash
-cp .env.example .env
-```
-
-عدّل ملف `.env` وأضف `BOT_TOKEN` الخاص بك من @BotFather.
+- Unit Tests: 60+ tests
+- Property-Based Tests: 38 properties
+- Coverage: 70%+ (statements, branches, functions, lines)
 
 ---
 
-## ⚙️ التكوين
+## 🤝 Contributing
 
-### ملف `.env`
+We welcome fellow space travelers to contribute! 🚀
 
-```bash
-BOT_TOKEN=your_bot_token_here
-MAX_FILE_SIZE=2147483648              # 2GB
-MAX_CONCURRENT_DOWNLOADS=2            # CRITICAL for 512MB RAM
-DOWNLOAD_TIMEOUT=600000               # 10 minutes
-WEBHOOK_URL=https://your-app.onrender.com  # For webhook mode
-PORT=3000
-TEMP_DIR=/tmp/tanzil-downloads
-LOG_LEVEL=info
-USE_WEBHOOK=true                      # Recommended for Render
-```
+**Quick Start:**
 
----
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 🚀 التشغيل
+**Before Contributing:**
 
-### التطوير المحلي (Polling Mode)
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines
+- Follow our [Code of Conduct](CODE_OF_CONDUCT.md)
+- Check existing issues and PRs
+- Write tests for new features
+- Update documentation as needed
 
-```bash
-# تثبيت yt-dlp (إذا لم يكن مثبتاً)
-pip3 install yt-dlp
-
-# تشغيل البوت
-npm run dev
-```
-
-### الإنتاج (Production Build)
-
-```bash
-npm run build
-npm start
-```
+**Good First Issues:**
+Look for issues labeled `good first issue` or `help wanted` to get started!
 
 ---
 
-## 🌐 النشر على Render
+## 🔒 Security
 
-### خطوات النشر السريع
+Security is a top priority. If you discover a security vulnerability, please follow our [Security Policy](SECURITY.md) for responsible disclosure.
 
-1. **Push الكود إلى GitHub**
-
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git push origin main
-```
-
-2. **إنشاء Web Service على Render**
-   - اذهب إلى [Render Dashboard](https://dashboard.render.com)
-   - اختر **New** → **Web Service**
-   - اربط GitHub repository
-   - اختر **Environment**: Docker
-   - اختر **Plan**: Free
-
-3. **إضافة Environment Variables**
-   - أضف `BOT_TOKEN` بقيمته الحقيقية
-   - باقي المتغيرات موجودة في `render.yaml`
-
-4. **Deploy!**
-   - اضغط **Create Web Service**
-   - انتظر 5-10 دقائق للبناء
-
-للمزيد من التفاصيل، راجع [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md).
+**Do not report security vulnerabilities through public GitHub issues.**
 
 ---
 
-## 🏗 البنية المعمارية
+## 📜 License
 
-```
-src/
-├── bot/
-│   └── botHandler.ts          # معالج البوت والرسائل
-├── download/
-│   └── downloadManager.ts     # إدارة التحميل عبر yt-dlp
-├── queue/
-│   └── requestQueue.ts        # نظام الطابور (حرج للأداء)
-├── utils/
-│   ├── config.ts              # تحميل التكوين
-│   ├── fileManager.ts         # إدارة الملفات المؤقتة
-│   ├── logger.ts              # Winston logging
-│   ├── resourceMonitor.ts     # مراقبة الذاكرة وCircuit Breaker
-│   └── urlValidator.ts        # التحقق من الروابط
-├── types/
-│   └── index.ts               # TypeScript interfaces
-├── server.ts                  # Express server (Webhooks)
-└── index.ts                   # نقطة البداية الرئيسية
-```
-
-### مخطط التدفق
-
-```
-User → Telegram → Webhook/Polling → BotHandler
-                                        ↓
-                                  URLValidator
-                                        ↓
-                                  RequestQueue ← ResourceMonitor
-                                        ↓
-                                DownloadManager (yt-dlp)
-                                        ↓
-                                  FileManager
-                                        ↓
-                                Telegram (Send File)
-                                        ↓
-                                 Cleanup Files
-```
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ---
 
-## 📁 الملفات الرئيسية
+## 🙏 Acknowledgments
 
-| الملف | الوصف |
-|------|-------|
-| `Dockerfile` | بناء Docker بـ Node.js + Python + FFmpeg |
-| `render.yaml` | تكوين Render التلقائي |
-| `requirements.md` | متطلبات المشروع (User Stories) |
-| `design.md` | التصميم المعماري والواجهات |
-| `tasks.md` | خطة التنفيذ خطوة بخطوة |
-| `RENDER_DEPLOYMENT.md` | دليل شامل للنشر على Render |
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) - Universal video downloader
+- [node-telegram-bot-api](https://github.com/yagop/node-telegram-bot-api) - Telegram Bot API
+- [Supabase](https://supabase.com) - Database and authentication
+- All our amazing [contributors](https://github.com/yourusername/tanzil-bot/graphs/contributors)
 
 ---
 
-## 🔧 استكشاف الأخطاء
+## 📊 Project Status
 
-### البوت لا يستجيب
-
-```bash
-# تحقق من Webhook status
-curl https://api.telegram.org/bot<BOT_TOKEN>/getWebhookInfo
-```
-
-### خطأ Out of Memory
-
-- تأكد من `MAX_CONCURRENT_DOWNLOADS=2`
-- تحقق من تفعيل garbage collection: `--expose-gc`
-
-للمزيد من الحلول، راجع [RENDER_DEPLOYMENT.md - استكشاف الأخطاء](RENDER_DEPLOYMENT.md#استكشاف-الأخطاء-وحلها).
+- **Status**: Active Development
+- **Version**: 1.0.0
+- **Last Updated**: December 2025
+- **Maintained**: Yes ✅
 
 ---
 
-## 📖 المستندات
+## 📞 Support
 
-- [Requirements](requirements.md) - متطلبات المشروع التفصيلية
-- [Design Document](design.md) - البنية المعمارية والواجهات
-- [Tasks](tasks.md) - خطة التنفيذ
-- [Render Deployment Guide](RENDER_DEPLOYMENT.md) - دليل النشر الشامل
-
----
-
-## 📝 الترخيص
-
-MIT License - راجع [LICENSE](LICENSE) للتفاصيل.
-
----
-
-## 🤝 المساهمة
-
-المساهمات مرحب بها! افتح Issue أو Pull Request.
-
----
-
-## 💬 الدعم
-
-للدعم والاستفسارات: [@YourSupportUsername](https://t.me/YourSupportUsername)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/tanzil-bot/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/tanzil-bot/discussions)
+- **Security**: See [SECURITY.md](SECURITY.md)
 
 ---
 
 <div align="center">
-  <p>صُنع بـ ❤️ باستخدام TypeScript & yt-dlp</p>
+  <sub>Built with ❤️ and ☕ by Abed Mohamed</sub>
+  <br>
+  <sub>⭐ Star us on GitHub if you find this project useful!</sub>
 </div>

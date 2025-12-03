@@ -18,8 +18,7 @@
       "id": 8563304469,
       "firstName": "F",
       "joinedAt": "2025-11-26T20:25:39.467Z",
-      "lastActive": "2025-11-28T06:18:24.749Z",
-      "isBanned": true,
+      "lastActive": "2025-11-28T20:33:03.475Z",
       "downloadHistory": [
         {
           "title": "Video",
@@ -38,6 +37,22 @@
           "url": "https://www.youtube.com/shorts/98gXMJ-GtLY",
           "format": "audio",
           "date": "2025-11-28T05:53:25.684Z"
+        },
+        {
+          "title": "Telegram Story",
+          "url": "https://t.me/NabalKhalil208/s/2",
+          "format": "story",
+          "date": "2025-11-28T20:18:32.559Z",
+          "timestamp": 1764361112559,
+          "filename": "story_NabalKhalil208_2_1764361083874"
+        },
+        {
+          "title": "Telegram Story",
+          "url": "https://t.me/mazenmohamed3/s/30",
+          "format": "story",
+          "date": "2025-11-28T20:39:40.448Z",
+          "timestamp": 1764362380448,
+          "filename": "story_mazenmohamed3_30_1764362360202"
         }
       ],
       "credits": {
@@ -51,7 +66,7 @@
       "id": 7582817665,
       "firstName": ".",
       "joinedAt": "2025-11-26T20:29:04.692Z",
-      "lastActive": "2025-11-26T21:18:02.366Z",
+      "lastActive": "2025-11-28T13:40:19.015Z",
       "isBanned": false,
       "downloadHistory": [],
       "credits": {
@@ -60,6 +75,29 @@
       },
       "timezone": 0,
       "activePlaylist": null
+    },
+    "8202196401": {
+      "id": 8202196401,
+      "firstName": "Basmalla🦢",
+      "joinedAt": "2025-11-28T20:42:19.402Z",
+      "lastActive": "2025-11-28T20:42:19.402Z",
+      "downloadHistory": [
+        {
+          "title": "Telegram Story",
+          "url": "https://t.me/BeTaDiiiNe/s/68",
+          "format": "story",
+          "date": "2025-11-28T20:43:19.903Z",
+          "timestamp": 1764362599903,
+          "filename": "story_BeTaDiiiNe_68_1764362574267"
+        }
+      ],
+      "credits": {
+        "used": 0,
+        "lastReset": "2025-11-28T20:42:19.402Z"
+      },
+      "timezone": 0,
+      "activePlaylist": null,
+      "username": "bas09871"
     }
   },
   "scheduledTasks": [],

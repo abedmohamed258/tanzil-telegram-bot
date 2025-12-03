@@ -1,12 +1,13 @@
 # Use Node.js 18 with Debian Bullseye (stable)
 FROM node:18-bullseye
 
-# Install Python3, pip, and FFmpeg
+# Install Python3, pip, FFmpeg AND aria2
 RUN apt-get update && \
     apt-get install -y \
     python3 \
     python3-pip \
-    ffmpeg && \
+    ffmpeg \
+    aria2 && \
     rm -rf /var/lib/apt/lists/*
 
 # Install yt-dlp globally
@@ -14,6 +15,9 @@ RUN pip3 install --no-cache-dir yt-dlp
 
 # Create app directory
 WORKDIR /app
+
+# Create necessary directories with permissions
+RUN mkdir -p temp data downloads && chmod -R 777 temp data downloads
 
 # Copy package files
 COPY package*.json ./

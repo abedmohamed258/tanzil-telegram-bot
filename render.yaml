@@ -5,38 +5,39 @@ services:
     plan: free
     region: singapore
     
-    # Build settings
     dockerfilePath: ./Dockerfile
     dockerContext: .
     
-    # Environment variables
     envVars:
       - key: BOT_TOKEN
-        sync: false
+        sync: false # سيطلب منك Render إدخال القيمة عند الإنشاء
       
+      # --- إضافات لميزة الستوريات (مهمة) ---
+      - key: TELEGRAM_API_ID
+        sync: false
+      - key: TELEGRAM_API_HASH
+        sync: false
+      - key: TELEGRAM_SESSION
+        sync: false
+        
+      # --- إعدادات البوت ---
       - key: MAX_FILE_SIZE
         value: 2147483648
-      
       - key: MAX_CONCURRENT_DOWNLOADS
         value: 2
-      
       - key: DOWNLOAD_TIMEOUT
         value: 600000
-      
       - key: PORT
         value: 3000
-      
       - key: TEMP_DIR
         value: /tmp/tanzil-downloads
-      
       - key: LOG_LEVEL
         value: info
       
+      # نصيحة: اجعلها false في البداية لتضمن عمل البوت فوراً (Long Polling)
+      # يمكنك تفعيل الـ Webhook لاحقاً بعد الحصول على رابط الاستضافة
       - key: USE_WEBHOOK
-        value: true
-    
-    # Health check endpoint
+        value: false 
+        
     healthCheckPath: /health
-    
-    # Auto-deploy on push
     autoDeploy: true
