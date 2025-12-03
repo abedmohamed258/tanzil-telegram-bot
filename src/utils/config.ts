@@ -17,7 +17,7 @@ export function loadConfig(): BotConfig {
   return {
     telegramToken: process.env.BOT_TOKEN!,
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '2147483648'), // 2GB default
-    downloadTimeout: parseInt(process.env.DOWNLOAD_TIMEOUT || '600000'), // 10 min default
+    downloadTimeout: parseInt(process.env.DOWNLOAD_TIMEOUT || '180000'), // 3 min (was 10 min)
     tempDirectory: process.env.TEMP_DIRECTORY || './temp',
     supportedPlatforms: [
       'youtube.com',
@@ -29,7 +29,7 @@ export function loadConfig(): BotConfig {
       process.env.MAX_CONCURRENT_DOWNLOADS || '2',
     ),
     sessionTimeout: 3600000, // 1 hour
-    retryAttempts: parseInt(process.env.RETRY_ATTEMPTS || '3'),
+    retryAttempts: parseInt(process.env.RETRY_ATTEMPTS || '2'), // 2 retries instead of 3
     webhookUrl: process.env.WEBHOOK_URL,
     port: parseInt(process.env.PORT || '3000'),
     useWebhook: process.env.USE_WEBHOOK === 'true',

@@ -41,15 +41,15 @@ export class DownloadManager {
 
   constructor(
     fileManager: FileManager,
-    maxRetries: number = 3,
-    timeout: number = 600000, // 10 minutes
+    maxRetries: number = 2,
+    timeout: number = 180000, // 3 minutes instead of 10
   ) {
     this.fileManager = fileManager;
     this.maxRetries = maxRetries;
     this.timeout = timeout;
   }
 
-  // Info Cache (10 minutes)
+  // Info Cache (30 minutes for better reuse)
   private infoCache = new Map<string, { data: VideoInfo; expires: number }>();
 
   /**
@@ -81,18 +81,26 @@ export class DownloadManager {
 
     logger.info('🔍 Fetching video info', { url: validUrl });
 
-    const args = ['--dump-json', '--no-playlist', validUrl];
+    const args = [
+      '--dump-json',
+      '--no-playlist',
+      '--force-ipv4',
+      '--no-warnings',
+      '--socket-timeout',
+      '10',
+      validUrl,
+    ];
 
     if (cookies) {
       args.push('--cookies', cookies);
     }
 
     try {
-      // Use retry logic for network operations
+      // Use retry logic for network operations (2 attempts, 500ms delay)
       const output = await retryWithBackoff(
         () => this.executeYtDlp(args),
-        3,
-        1000,
+        2,
+        500,
         'getVideoInfo',
       );
       const data: YtDlpVideoInfo = JSON.parse(output);
@@ -167,7 +175,7 @@ export class DownloadManager {
       // Save to Cache
       this.infoCache.set(validUrl, {
         data: result,
-        expires: Date.now() + 600000, // 10 minutes
+        expires: Date.now() + 1800000, // 30 minutes for better reuse
       });
 
       return result;
@@ -277,8 +285,12 @@ export class DownloadManager {
           '--external-downloader',
           'aria2c',
           '--external-downloader-args',
-          'aria2c:-x 8 -s 8 -k 1M',
+          'aria2c:-x 16 -s 16 -k 1M',
           '--no-mtime',
+          '--force-ipv4',
+          '--no-warnings',
+          '--socket-timeout',
+          '10',
           validUrl,
         ];
 
@@ -464,7 +476,7 @@ export class DownloadManager {
       if (timeout) {
         const timer = setTimeout(() => {
           process.kill();
-          const err = new Error('تجاوز المهلة الزمنية للتحميل (10 دقائق)');
+          const err = new Error('تجاوز المهلة الزمنية للتحميل (3 دقائق)');
           (err as any).killed = true;
           reject(err);
         }, timeout);

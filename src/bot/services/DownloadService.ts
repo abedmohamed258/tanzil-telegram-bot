@@ -221,10 +221,19 @@ export class DownloadService {
     url: string,
     messageId: number,
   ): Promise<void> {
-    // Use retry logic with fallback for getting video info
+    // Send immediate status update to user
+    await this.bot.telegram.editMessageText(
+      chatId,
+      messageId,
+      undefined,
+      '🔄 *جاري جلب معلومات الفيديو...* ⚡',
+      { parse_mode: 'Markdown' },
+    );
+
+    // Use retry logic with fallback for getting video info (2 retries, 300ms delay)
     const info = await withFallback(
       () =>
-        retryWithBackoff(() => this.downloadManager.getVideoInfo(url), 3, 1000),
+        retryWithBackoff(() => this.downloadManager.getVideoInfo(url), 2, 300),
       async () => {
         logger.warn(
           'Failed to get video info after retries, using basic fallback',

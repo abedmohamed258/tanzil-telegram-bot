@@ -251,7 +251,7 @@ export class MediaDownloader {
     updateStatus: (text: string, showCancelButton?: boolean) => Promise<void>,
   ) {
     let lastUpdate = 0;
-    const MIN_UPDATE_INTERVAL = 3000;
+    const MIN_UPDATE_INTERVAL = 1000; // Faster updates (was 3000ms)
     const loadingPhrases = [
       '🚀 جاري المعالجة...',
       '⬇️ جاري التحميل...',
@@ -301,21 +301,21 @@ export class MediaDownloader {
       async () => {
         const downloadResult = isAudio
           ? await this.downloadManager.downloadAudio(
-              url,
-              sessionId,
-              userId,
-              undefined,
-            )
+            url,
+            sessionId,
+            userId,
+            undefined,
+          )
           : await this.downloadManager.downloadVideo(
-              url,
-              format || 'best',
-              sessionId,
-              userId,
-              undefined,
-              (p) => {
-                updateProgress(p).catch(console.error);
-              },
-            );
+            url,
+            format || 'best',
+            sessionId,
+            userId,
+            undefined,
+            (p) => {
+              updateProgress(p).catch(console.error);
+            },
+          );
 
         if (!downloadResult.success || !downloadResult.filePath) {
           throw new Error(downloadResult.error || 'فشل التحميل');
@@ -324,7 +324,7 @@ export class MediaDownloader {
         return downloadResult;
       },
       3,
-      2000,
+      1000,
     );
 
     // Type assertion after validation
@@ -364,7 +364,7 @@ export class MediaDownloader {
         }
       },
       3,
-      2000,
+      1000,
     );
   }
 
