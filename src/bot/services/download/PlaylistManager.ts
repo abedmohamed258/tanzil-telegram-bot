@@ -73,7 +73,7 @@ export class PlaylistManager {
       chatId,
       messageIdToEdit,
       undefined,
-      '📋 *جاري فحص قائمة التشغيل...*',
+      '📋 *جاري معالجة قائمة التشغيل...*',
       {
         parse_mode: 'Markdown',
       },
@@ -461,7 +461,7 @@ export class PlaylistManager {
         'audio',
       );
       await this.storage.setPlaylistSession(userId, null);
-      await this.bot.telegram.answerCbQuery(query.id, '🚀 جاري بدء التحميل...');
+      await this.bot.telegram.answerCbQuery(query.id, '⏳ جاري بدء التحميل...');
     } else {
       await this.showQualityMenu(chatId, session.menuMessageId);
     }
@@ -515,7 +515,7 @@ export class PlaylistManager {
       qual,
     );
     await this.storage.setPlaylistSession(userId, null);
-    await this.bot.telegram.answerCbQuery(query.id, '🚀 جاري بدء التحميل...');
+    await this.bot.telegram.answerCbQuery(query.id, '⏳ جاري بدء التحميل...');
   }
 
   private async handleScheduleRequest(

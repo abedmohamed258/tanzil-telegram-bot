@@ -104,7 +104,7 @@ export class MediaDownloader {
         chatId,
         statusMessageId,
         undefined,
-        `📥 *تمت الإضافة للقائمة!* (الدور: ${this.queue.getQueueLength() + 1})\n⏳ جاري الانتظار...`,
+        `📥 *تمت إضافة الملف للقائمة!* (الدور: ${this.queue.getQueueLength() + 1})\n⏳ جاري معالجة الطلب...`,
         {
           parse_mode: 'Markdown',
         },
@@ -113,7 +113,7 @@ export class MediaDownloader {
       const msg = await this.sendToChat(
         chatId,
         threadId,
-        `📥 *تمت الإضافة للقائمة!* (الدور: ${this.queue.getQueueLength() + 1})\n⏳ جاري الانتظار...`,
+        `📥 *تمت إضافة الملف للقائمة!* (الدور: ${this.queue.getQueueLength() + 1})\n⏳ جاري معالجة الطلب...`,
       );
       statusMessageId = msg.message_id;
     }
@@ -253,10 +253,10 @@ export class MediaDownloader {
     let lastUpdate = 0;
     const MIN_UPDATE_INTERVAL = 500; // Ultra-fast updates
     const loadingPhrases = [
-      '🚀 جاري المعالجة...',
-      '⬇️ جاري التحميل...',
-      '📦 جاري التجهيز...',
-      '✨ اللمسات الأخيرة...',
+      '⏳ جاري التحميل...',
+      '📥 جاري استرجاع البيانات...',
+      '📦 جاري معالجة الملف...',
+      '⚙️ جاري إنهاء العملية...',
     ];
 
     return async (percent: number) => {
@@ -283,7 +283,7 @@ export class MediaDownloader {
   }
 
   private getLoadingPhrase(percent: number, phrases: string[]): string {
-    if (percent === 100) return '✅ تم التحميل! جاري الرفع...';
+    if (percent === 100) return '✅ تم التحميل بنجاح! جاري رفع الملف...';
     if (percent > 70) return phrases[2];
     if (percent > 30) return phrases[1];
     return phrases[0];

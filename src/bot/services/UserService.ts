@@ -112,15 +112,15 @@ export class UserService {
         const user = await this.storage.getUser(userId);
 
         const welcomeMessage = `
-🌌 *مرحباً بك في عالم التنزيل، ${msg.from?.first_name || 'يا مسافر'}!*
-━━━━━━━━━━━━━━━━━━━━
-⚡ *مركز القيادة:*
-💠 *الرصيد الكوني:* \`${remaining}/${limit}\` نقطة
-💠 *إنجازاتك:* \`${user?.downloadHistory.length || 0}\` ملف تم استخراجه
-━━━━━━━━━━━━━━━━━━━━
+👋 *مرحباً بك، ${msg.from?.first_name || 'المستخدم'}*
+━━━━━━━━━━━━━━━━━━━━━━━
+📊 *ملخص حسابك:*
+💰 *الرصيد المتاح:* \`${remaining}/${limit}\` نقطة
+📥 *عمليات التنزيل:* \`${user?.downloadHistory.length || 0}\` ملف
+━━━━━━━━━━━━━━━━━━━━━━━
 
-🚀 *بوابتك للمحتوى:*
-أرسل رابطاً من أي مجرة (YouTube, TikTok, Instagram...) وسأقوم باستدعائه لك في لمح البصر! ✨`;
+📝 *الخدمات المتاحة:*
+يمكنك إرسال رابط من YouTube أو TikTok أو Instagram أو أي منصة أخرى مدعومة لتحميل المحتوى مباشرة.`;
 
         const options: SendMessageOptions = {
             parse_mode: 'Markdown',
@@ -150,7 +150,7 @@ export class UserService {
             if (!text) return;
             const extractedUrl = this.urlValidator.extractURL(text);
             if (!extractedUrl || !this.urlValidator.isValid(extractedUrl)) {
-                await this.sendToChat(chatId, msg.message_thread_id, '❌ رابط غير صحيح. حاول مرة أخرى.');
+                await this.sendToChat(chatId, msg.message_thread_id, '❌ الرابط المدخل غير صحيح. يرجى التحقق من صحة الرابط والمحاولة مجدداً.');
                 return;
             }
 
@@ -189,7 +189,7 @@ export class UserService {
             // Validate Time Format (HH:MM)
             const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
             if (!timeRegex.test(text)) {
-                await this.sendToChat(chatId, msg.message_thread_id, '❌ صيغة الوقت غير صحيحة. الرجاء استخدام صيغة 24 ساعة (مثال: 14:30).');
+                await this.sendToChat(chatId, msg.message_thread_id, '❌ صيغة الوقت غير صحيحة. يرجى استخدام صيغة 24 ساعة (مثال: 14:30).');
                 return;
             }
 
@@ -198,7 +198,7 @@ export class UserService {
         } else if (state.action === 'WAITING_SUPPORT_MESSAGE') {
             if (!text) return;
             await this.forwardToAdmin(msg, text);
-            await this.sendToChat(chatId, msg.message_thread_id, '✅ *تم إرسال رسالتك للإدارة.* سيتم الرد عليك هنا.', { parse_mode: 'Markdown' });
+            await this.sendToChat(chatId, msg.message_thread_id, '✅ *تم استلام رسالتك بنجاح.* سيتم الرد عليك من قبل فريق الدعم قريباً.', { parse_mode: 'Markdown' });
             this.userStates.delete(userId);
         }
     }
@@ -275,7 +275,7 @@ export class UserService {
         } else if (subAction === 'sched_cancel') {
             this.userStates.delete(userId);
             await this.bot.telegram.deleteMessage(chatId, messageId);
-            await this.sendToChat(chatId, query.message.message_thread_id, '❌ تم الإلغاء.');
+            await this.sendToChat(chatId, query.message.message_thread_id, '❌ تم إلغاء العملية.');
         } else if (subAction === 'history') {
             await this.handleHistory(chatId, userId, messageId);
         } else if (subAction === 'help') {

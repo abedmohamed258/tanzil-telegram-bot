@@ -126,7 +126,7 @@ export class DownloadService {
     const processingMsg = await this.sendToChat(
       chatId,
       undefined,
-      '⏳ *جاري معالجة الرابط وجلب البيانات...*',
+      '⏳ *جاري معالجة الرابط واسترجاع معلومات الملف...*',
       { parse_mode: 'Markdown' },
     );
 
@@ -198,7 +198,7 @@ export class DownloadService {
         chatId,
         messageId,
         undefined,
-        '❌ خدمة الستوري غير مفعلة.',
+        '❌ خدمة تحميل القصص غير مفعلة حالياً.',
       );
       return;
     }
@@ -207,7 +207,7 @@ export class DownloadService {
       chatId,
       messageId,
       undefined,
-      '📱 *جاري جلب الستوري من تيليجرام...*',
+      '📱 *جاري استرجاع القصة من Telegram...*',
       {
         parse_mode: 'Markdown',
       },
@@ -226,7 +226,7 @@ export class DownloadService {
       chatId,
       messageId,
       undefined,
-      '🔄 *جاري جلب معلومات الفيديو...* ⚡',
+      '🔄 *جاري استرجاع معلومات الملف...*',
       { parse_mode: 'Markdown' },
     );
 
@@ -289,7 +289,7 @@ export class DownloadService {
       chatId,
       messageId,
       undefined,
-      `❌ *عذراً، الفيديو طويل جداً*\n⏱ المدة: ${hours}س ${minutes}د\n⚠️ الحد الأقصى: 3 ساعات`,
+      `❌ *الملف يتجاوز الحد المسموح به*\n⏱ المدة: ${hours}س ${minutes}د\n⚠️ الحد الأقصى المسموح: 3 ساعات`,
       { parse_mode: 'Markdown' },
     );
   }
@@ -313,7 +313,7 @@ export class DownloadService {
       chatId,
       messageId,
       undefined,
-      '🚀 *جاري التحميل تلقائياً حسب تفضيلاتك...*',
+      '📥 *جاري تحميل الملف حسب إعداداتك المفضلة...*',
       {
         parse_mode: 'Markdown',
       },
@@ -392,7 +392,7 @@ export class DownloadService {
     url: string,
     error: unknown,
   ): Promise<void> {
-    const errorMsg = `❌ *فشل تحليل الرابط*\n\nالسبب: ${(error as Error).message}`;
+    const errorMsg = `❌ *فشل في معالجة الرابط*\n\nالتفاصيل: ${(error as Error).message}`;
     await this.bot.telegram.editMessageText(
       chatId,
       messageId,
@@ -430,7 +430,7 @@ export class DownloadService {
             chatId,
             messageId,
             undefined,
-            '🛑 *تم إلغاء التحميل من القائمة بنجاح.*',
+            '✅ *تم إلغاء عملية التحميل بنجاح.*',
             {
               parse_mode: 'Markdown',
             },
@@ -440,7 +440,7 @@ export class DownloadService {
           await this.downloadManager.cancelDownload(sessionId);
           await this.bot.telegram.answerCbQuery(
             query.id,
-            'جاري محاولة الإلغاء...', 
+            'جاري محاولة إلغاء العملية...', 
           );
         }
       } else {
@@ -477,7 +477,7 @@ export class DownloadService {
 
     await this.bot.telegram.answerCbQuery(
       query.id,
-      '🫡 أوامرك! جاري بدء المهمة...', 
+      '✅ تم استقبال أمرك. جاري بدء العملية...', 
     );
     this.callbackMap.delete(uuid);
 
@@ -626,7 +626,7 @@ export class DownloadService {
     const processingMsg = await this.sendToChat(
       chatId,
       undefined,
-      '⏳ *جاري فحص القائمة للجدولة...*',
+      '⏳ *جاري فحص قائمة الملفات المجدولة...*',
       { parse_mode: 'Markdown' },
     );
 
@@ -751,7 +751,7 @@ export class DownloadService {
         this.bot,
         chatId,
         `⏰ *حان وقت التحميل المجدول!*
-جاري معالجة الرابط: ${safeUrl}`,
+معالجة الرابط: ${safeUrl}`,
         {},
       );
 
