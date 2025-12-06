@@ -1,5 +1,5 @@
-# Use Node.js 20 with Debian Bullseye (stable) - Required by Supabase
-FROM node:20-bullseye
+# Use Node.js 20 with Debian Bookworm (Python 3.11) - Required by Supabase & yt-dlp
+FROM node:20-bookworm
 
 # Install Python3, pip, FFmpeg AND aria2
 RUN apt-get update && \
