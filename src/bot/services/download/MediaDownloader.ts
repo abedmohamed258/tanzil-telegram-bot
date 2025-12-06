@@ -1,6 +1,6 @@
 import { Telegraf } from 'telegraf';
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { SupabaseManager } from '../../../database/SupabaseManager';
 import { DownloadManager } from '../../../download/DownloadManager';
 import { RequestQueue } from '../../../queue/RequestQueue';
@@ -39,7 +39,7 @@ export class MediaDownloader {
     cost: number,
     messageIdToEdit?: number,
   ): Promise<void> {
-    const requestId = uuidv4();
+    const requestId = randomUUID();
     let statusMessageId = messageIdToEdit;
 
     if (statusMessageId) {
@@ -93,7 +93,7 @@ export class MediaDownloader {
     cost: number,
     messageIdToEdit?: number,
   ): Promise<void> {
-    const requestId = uuidv4();
+    const requestId = randomUUID();
     let statusMessageId = messageIdToEdit;
 
     if (statusMessageId) {

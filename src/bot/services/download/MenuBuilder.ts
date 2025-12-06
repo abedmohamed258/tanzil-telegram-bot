@@ -2,7 +2,7 @@ import { Telegraf } from 'telegraf';
 import {
   InlineKeyboardButton,
 } from 'telegraf/typings/core/types/typegram';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { SupabaseManager } from '../../../database/SupabaseManager';
 import { VideoInfo, Format } from '../../../types';
 import { calculateCost } from '../../../utils/logicHelpers';
@@ -51,7 +51,7 @@ export class MenuBuilder {
     videoInfo: VideoInfo,
     messageIdToEdit?: number,
   ): Promise<string | null> {
-    const uuid = uuidv4().substring(0, 8);
+    const uuid = randomUUID().substring(0, 8);
     this.callbackMap.set(uuid, {
       timestamp: Date.now(),
       url,
