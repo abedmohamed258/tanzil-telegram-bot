@@ -1,5 +1,5 @@
-# Use Node.js 18 with Debian Bullseye (stable)
-FROM node:18-bullseye
+# Use Node.js 20 with Debian Bullseye (stable) - Required by Supabase
+FROM node:20-bullseye
 
 # Install Python3, pip, FFmpeg AND aria2
 RUN apt-get update && \
