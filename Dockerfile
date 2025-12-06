@@ -10,8 +10,8 @@ RUN apt-get update && \
     aria2 && \
     rm -rf /var/lib/apt/lists/*
 
-# Install yt-dlp globally
-RUN pip3 install --no-cache-dir yt-dlp
+# Install yt-dlp globally (--break-system-packages needed for Debian Bookworm PEP 668)
+RUN pip3 install --no-cache-dir --break-system-packages yt-dlp
 
 # Create app directory
 WORKDIR /app
