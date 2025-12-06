@@ -22,14 +22,17 @@ RUN mkdir -p temp data downloads && chmod -R 777 temp data downloads
 # Copy package files
 COPY package*.json ./
 
-# Install Node.js dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including dev for TypeScript build)
+RUN npm ci
 
 # Copy application code
 COPY . .
 
 # Build TypeScript
 RUN npm run build
+
+# Remove dev dependencies to reduce image size
+RUN npm prune --production
 
 # Expose port for health checks (if using webhooks)
 EXPOSE 3000
