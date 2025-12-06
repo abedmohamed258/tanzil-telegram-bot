@@ -144,6 +144,15 @@ function registerHandlers(app: AppContext): void {
   bot.command('clean', (ctx) => adminService.handleForceClean(ctx.message));
   bot.command('stats', (ctx) => adminService.handleSysStats(ctx.message));
 
+  // Handle /user_ID commands for viewing user details
+  bot.hears(/^\/user_(\d+)/, async (ctx) => {
+    const match = ctx.message.text.match(/^\/user_(\d+)/);
+    if (match) {
+      const targetUserId = parseInt(match[1], 10);
+      await adminService.handleUserDetails(ctx.message, targetUserId);
+    }
+  });
+
   bot.on('message', async (ctx: Context) => {
     const msg = ctx.message as any; // telegraf types are a bit different
     if (!msg || !msg.text) return;

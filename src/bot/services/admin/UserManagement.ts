@@ -28,7 +28,7 @@ export class UserManagement {
 
   public async showUserProfile(
     chatId: number,
-    _threadId: number | undefined,
+    threadId: number | undefined,
     targetId: number,
     messageIdToEdit?: number,
   ): Promise<void> {
@@ -37,7 +37,7 @@ export class UserManagement {
       await this.bot.telegram.sendMessage(
         chatId,
         `❌ User \`${targetId}\` not found.`,
-        { parse_mode: 'Markdown' },
+        { parse_mode: 'Markdown', message_thread_id: threadId },
       );
       return;
     }
@@ -97,7 +97,7 @@ export class UserManagement {
         reply_markup: { inline_keyboard: keyboard },
       });
     } else {
-      await this.sendToChat(chatId, profileMsg, {
+      await this.sendToChat(chatId, threadId, profileMsg, {
         parse_mode: 'Markdown',
         reply_markup: { inline_keyboard: keyboard },
       });
@@ -122,7 +122,7 @@ export class UserManagement {
     if (messageIdToUpdate) {
       await this.showUserProfile(chatId, threadId, targetId, messageIdToUpdate);
     } else {
-      await this.sendToChat(chatId, msg, { parse_mode: 'Markdown' });
+      await this.sendToChat(chatId, threadId, msg, { parse_mode: 'Markdown' });
     }
   }
 
@@ -136,7 +136,7 @@ export class UserManagement {
     if (messageIdToUpdate) {
       await this.showUserProfile(chatId, threadId, targetId, messageIdToUpdate);
     } else {
-      await this.sendToChat(chatId, `✅ User \`${targetId}\` unbanned.`, {
+      await this.sendToChat(chatId, threadId, `✅ User \`${targetId}\` unbanned.`, {
         parse_mode: 'Markdown',
       });
     }
@@ -173,7 +173,7 @@ export class UserManagement {
     }
 
     const keyboard: any[][] = [];
-    
+
     // Pagination buttons
     if (totalPages > 1) {
       const navRow: any[] = [];
@@ -186,7 +186,7 @@ export class UserManagement {
       }
       keyboard.push(navRow);
     }
-    
+
     keyboard.push([{ text: '🔙 Back to Profile', callback_data: `admin:profile:${targetId}` }]);
 
     await this.editMessage(chatId, messageId, historyMsg, {
@@ -198,7 +198,7 @@ export class UserManagement {
 
   public async executeDM(
     chatId: number,
-    _threadId: number | undefined,
+    threadId: number | undefined,
     targetId: number,
     text: string,
   ): Promise<void> {
@@ -208,12 +208,13 @@ export class UserManagement {
         `📩 *Message from Admin*\n\n${text}`,
         { parse_mode: 'Markdown' },
       );
-      await this.sendToChat(chatId, `✅ Message sent to \`${targetId}\`.`, {
+      await this.sendToChat(chatId, threadId, `✅ Message sent to \`${targetId}\`.`, {
         parse_mode: 'Markdown',
       });
     } catch (e) {
       await this.sendToChat(
         chatId,
+        threadId,
         `❌ Failed to send message. User might have blocked the bot.`,
       );
     }
@@ -232,6 +233,7 @@ export class UserManagement {
     } else {
       await this.sendToChat(
         chatId,
+        threadId,
         `✅ Credits reset for user \`${targetId}\`.`,
         { parse_mode: 'Markdown' },
       );
@@ -240,10 +242,14 @@ export class UserManagement {
 
   private async sendToChat(
     chatId: number,
+    threadId: number | undefined,
     text: string,
     options: any = {},
   ): Promise<any> {
-    return this.bot.telegram.sendMessage(chatId, text, options);
+    return this.bot.telegram.sendMessage(chatId, text, {
+      ...options,
+      message_thread_id: threadId,
+    });
   }
 
   private async editMessage(

@@ -209,6 +209,12 @@ export class AdminService {
     await this.systemAdmin.showAdminDashboard(msg.chat.id);
   }
 
+  public async handleUserDetails(msg: Message, targetUserId: number): Promise<void> {
+    if (!this.isAdmin(msg)) return;
+    const threadId = (msg as any).message_thread_id;
+    await this.userManagement.showUserProfile(msg.chat.id, threadId, targetUserId);
+  }
+
   // State Handling
   public async handleStateInput(
     msg: Message,
