@@ -23,7 +23,8 @@ RUN mkdir -p temp data downloads && chmod -R 777 temp data downloads
 COPY package*.json ./
 
 # Install ALL dependencies (including dev for TypeScript build)
-RUN npm ci
+# Use --ignore-scripts because prepare script needs source files
+RUN npm ci --ignore-scripts
 
 # Copy application code
 COPY . .
