@@ -246,10 +246,19 @@ export class UserManagement {
     text: string,
     options: any = {},
   ): Promise<any> {
-    return this.bot.telegram.sendMessage(chatId, text, {
-      ...options,
-      message_thread_id: threadId,
-    });
+    try {
+      return await this.bot.telegram.sendMessage(chatId, text, {
+        ...options,
+        message_thread_id: threadId,
+      });
+    } catch (error: unknown) {
+      const err = error as any;
+      // Fallback to main chat if thread not found
+      if (err?.response?.description?.includes('thread not found')) {
+        return this.bot.telegram.sendMessage(chatId, text, options);
+      }
+      throw error;
+    }
   }
 
   private async editMessage(
