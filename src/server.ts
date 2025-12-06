@@ -68,10 +68,13 @@ export class Server {
       this.app.listen(this.port, async () => {
         logger.info(`🚀 Server running on port ${this.port}`);
 
-        // Set Telegram webhook
         try {
-          await this.bot.telegram.setWebhook(`${this.webhookUrl}/webhook`);
-          logger.info(`✅ Webhook set to: ${this.webhookUrl}/webhook`);
+          // Ensure we don't add /webhook twice if URL already ends with it
+          const webhookPath = this.webhookUrl.endsWith('/webhook')
+            ? this.webhookUrl
+            : `${this.webhookUrl}/webhook`;
+          await this.bot.telegram.setWebhook(webhookPath);
+          logger.info(`✅ Webhook set to: ${webhookPath}`);
         } catch (error: unknown) {
           logger.error('Failed to set webhook', {
             error: (error as Error).message,
