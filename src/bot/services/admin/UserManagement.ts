@@ -147,35 +147,52 @@ export class UserManagement {
     _threadId: number | undefined,
     targetId: number,
     messageId: number,
+    page: number = 0,
   ): Promise<void> {
     const user = await this.storage.getUser(targetId);
     if (!user) return;
 
-    let historyMsg = `📂 *Download History for* \`${targetId}\`\n\n`;
-    const recentHistory = user.downloadHistory.slice(-10).reverse();
+    const allHistory = [...user.downloadHistory].reverse();
+    const PAGE_SIZE = 10;
+    const totalPages = Math.ceil(allHistory.length / PAGE_SIZE) || 1;
+    const startIndex = page * PAGE_SIZE;
+    const endIndex = Math.min(startIndex + PAGE_SIZE, allHistory.length);
+    const pageHistory = allHistory.slice(startIndex, endIndex);
 
-    if (recentHistory.length === 0) {
+    let historyMsg = `📂 *Download History for* \`${targetId}\`\n`;
+    historyMsg += `📊 (${allHistory.length > 0 ? startIndex + 1 : 0}-${endIndex}/${allHistory.length})\n\n`;
+
+    if (allHistory.length === 0) {
       historyMsg += 'No downloads recorded.';
     } else {
-      recentHistory.forEach((h, i) => {
+      pageHistory.forEach((h, i) => {
+        const num = startIndex + i + 1;
         const date = new Date(h.date).toLocaleDateString();
-        historyMsg += `${i + 1}. [${h.title}](${h.url}) - 📅 ${date}\n`;
+        historyMsg += `${num}. [${h.title}](${h.url}) - 📅 ${date}\n`;
       });
     }
+
+    const keyboard: any[][] = [];
+    
+    // Pagination buttons
+    if (totalPages > 1) {
+      const navRow: any[] = [];
+      if (page > 0) {
+        navRow.push({ text: '◀️ Prev', callback_data: `admin:history:${targetId}:${page - 1}` });
+      }
+      navRow.push({ text: `${page + 1}/${totalPages}`, callback_data: 'noop' });
+      if (page < totalPages - 1) {
+        navRow.push({ text: 'Next ▶️', callback_data: `admin:history:${targetId}:${page + 1}` });
+      }
+      keyboard.push(navRow);
+    }
+    
+    keyboard.push([{ text: '🔙 Back to Profile', callback_data: `admin:profile:${targetId}` }]);
 
     await this.editMessage(chatId, messageId, historyMsg, {
       parse_mode: 'Markdown',
       link_preview_options: { is_disabled: true },
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: '🔙 Back to Profile',
-              callback_data: `admin:profile:${targetId}`,
-            },
-          ],
-        ],
-      },
+      reply_markup: { inline_keyboard: keyboard },
     });
   }
 

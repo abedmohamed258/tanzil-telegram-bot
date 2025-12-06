@@ -126,8 +126,7 @@ export class DownloadService {
     const processingMsg = await this.sendToChat(
       chatId,
       undefined,
-      '⏳ *جاري معالجة الرابط واسترجاع معلومات الملف...*',
-      { parse_mode: 'Markdown' },
+      '⏳ جاري معالجة الرابط...',
     );
 
     try {
@@ -207,7 +206,7 @@ export class DownloadService {
       chatId,
       messageId,
       undefined,
-      '📱 *جاري استرجاع القصة من Telegram...*',
+      '📱 *جاري استرجاع القصة...*',
       {
         parse_mode: 'Markdown',
       },
@@ -226,7 +225,7 @@ export class DownloadService {
       chatId,
       messageId,
       undefined,
-      '🔄 *جاري استرجاع معلومات الملف...*',
+      '🔄 *جاري استرجاع البيانات...*',
       { parse_mode: 'Markdown' },
     );
 
@@ -289,7 +288,7 @@ export class DownloadService {
       chatId,
       messageId,
       undefined,
-      `❌ *الملف يتجاوز الحد المسموح به*\n⏱ المدة: ${hours}س ${minutes}د\n⚠️ الحد الأقصى المسموح: 3 ساعات`,
+      `❌ الملف يتجاوز الحد المسموح\n━━━━━━━━━━━━━━━\n⏱ المدة: ${hours}س ${minutes}د\n⚠️ الحد الأقصى: 3 ساعات`,
       { parse_mode: 'Markdown' },
     );
   }
@@ -313,7 +312,7 @@ export class DownloadService {
       chatId,
       messageId,
       undefined,
-      '📥 *جاري تحميل الملف حسب إعداداتك المفضلة...*',
+      '📥 *جاري بدء التحميل...*',
       {
         parse_mode: 'Markdown',
       },
@@ -358,8 +357,7 @@ export class DownloadService {
       chatId,
       messageId,
       undefined,
-      `❌ *رصيدك غير كافٍ.*
-المطلوب: ${cost}\nالمتبقي: ${remaining}`,
+      `❌ الرصيد غير كافي\n━━━━━━━━━━━━━━━\n💰 المطلوب: ${cost} نقطة\n💳 المتبقي: ${remaining} نقطة`,
       {
         parse_mode: 'Markdown',
       },
@@ -392,7 +390,7 @@ export class DownloadService {
     url: string,
     error: unknown,
   ): Promise<void> {
-    const errorMsg = `❌ *فشل في معالجة الرابط*\n\nالتفاصيل: ${(error as Error).message}`;
+    const errorMsg = `❌ فشل في معالجة الرابط\n━━━━━━━━━━━━━━━\n📋 السبب: ${(error as Error).message}`;
     await this.bot.telegram.editMessageText(
       chatId,
       messageId,
@@ -430,17 +428,17 @@ export class DownloadService {
             chatId,
             messageId,
             undefined,
-            '✅ *تم إلغاء عملية التحميل بنجاح.*',
+            '✅ *تم إلغاء العملية*',
             {
               parse_mode: 'Markdown',
             },
           );
-          await this.bot.telegram.answerCbQuery(query.id, 'تم الإلغاء.');
+          await this.bot.telegram.answerCbQuery(query.id, 'تم الإلغاء');
         } else {
           await this.downloadManager.cancelDownload(sessionId);
           await this.bot.telegram.answerCbQuery(
             query.id,
-            'جاري محاولة إلغاء العملية...', 
+            'جاري محاولة إلغاء العملية...',
           );
         }
       } else {
@@ -449,12 +447,12 @@ export class DownloadService {
           chatId,
           messageId,
           undefined,
-          '❌ *تم إلغاء العملية.*',
+          '❌ *تم إلغاء العملية*',
           {
             parse_mode: 'Markdown',
           },
         );
-        await this.bot.telegram.answerCbQuery(query.id, 'تم الإلغاء.');
+        await this.bot.telegram.answerCbQuery(query.id, 'تم الإلغاء');
       }
       return;
     }
@@ -469,7 +467,7 @@ export class DownloadService {
         chatId,
         messageId,
         undefined,
-        '❌ *انتهت صلاحية هذا الطلب.*',
+        '❌ *انتهت صلاحية هذا الطلب*\n💡 أرسل الرابط مجدداً',
         { parse_mode: 'Markdown' },
       );
       return;
@@ -477,7 +475,7 @@ export class DownloadService {
 
     await this.bot.telegram.answerCbQuery(
       query.id,
-      '✅ تم استقبال أمرك. جاري بدء العملية...', 
+      '✅ تم استقبال أمرك. جاري بدء العملية...',
     );
     this.callbackMap.delete(uuid);
 
@@ -498,8 +496,7 @@ export class DownloadService {
           chatId,
           messageId,
           undefined,
-          `❌ *رصيدك غير كافٍ.*
-المطلوب: ${cost}\nالمتبقي: ${remaining}`,
+          `❌ الرصيد غير كافي\n━━━━━━━━━━━━━━━\n💰 المطلوب: ${cost} نقطة\n💳 المتبقي: ${remaining} نقطة`,
           {
             parse_mode: 'Markdown',
           },
@@ -719,9 +716,10 @@ export class DownloadService {
   }
 
   private startScheduler() {
+    // Check every 10 seconds for more accurate scheduling (start of minute, not end)
     this.schedulerInterval = setInterval(
       () => this.checkScheduledTasks(),
-      60000,
+      10000,
     );
   }
 

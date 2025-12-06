@@ -95,11 +95,46 @@ export class UserService {
         return this.userStates.has(userId);
     }
 
+    // Send real-time notification to admin dashboard
+    private async notifyDashboard(type: 'new_user' | 'download' | 'schedule' | 'support', data: any) {
+        try {
+            let message = '';
+            const timestamp = new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' });
+
+            switch (type) {
+                case 'new_user':
+                    message = `👤 *مستخدم جديد*\n━━━━━━━━━━━━━━━\n📛 ${data.name}\n🆔 \`${data.userId}\`\n⏰ ${timestamp}`;
+                    break;
+                case 'download':
+                    message = `📥 *تحميل جديد*\n━━━━━━━━━━━━━━━\n👤 \`${data.userId}\`\n🔗 ${data.url?.substring(0, 50)}...\n⏰ ${timestamp}`;
+                    break;
+                case 'schedule':
+                    message = `📅 *جدولة جديدة*\n━━━━━━━━━━━━━━━\n👤 \`${data.userId}\`\n🔗 ${data.url?.substring(0, 50)}...\n⏰ ${data.time}\n⏰ ${timestamp}`;
+                    break;
+                case 'support':
+                    message = `📞 *رسالة دعم*\n━━━━━━━━━━━━━━━\n👤 \`${data.userId}\`\n📝 ${data.message?.substring(0, 100)}...\n⏰ ${timestamp}`;
+                    break;
+            }
+
+            await this.bot.telegram.sendMessage(this.adminConfig.adminGroupId, message, {
+                parse_mode: 'Markdown',
+                message_thread_id: this.adminConfig.topicLogs
+            });
+        } catch (error) {
+            // Silent fail - dashboard notifications are non-critical
+            logOperation('dashboard_notify_failed', { type, error: (error as Error).message });
+        }
+    }
+
     public async handleStart(msg: any): Promise<void> {
         const userId = msg.from?.id;
         if (!userId) return;
 
         logOperation('command_start', { userId });
+
+        // Check if new user
+        const existingUser = await this.storage.getUser(userId);
+        const isNewUser = !existingUser;
 
         await this.storage.updateUser({
             id: userId,
@@ -108,15 +143,24 @@ export class UserService {
             username: msg.from?.username
         });
 
+        // Notify dashboard for new users
+        if (isNewUser) {
+            await this.notifyDashboard('new_user', {
+                userId,
+                name: msg.from?.first_name || 'Unknown',
+                username: msg.from?.username
+            });
+        }
+
         const { remaining, limit } = await this.storage.getCredits(userId);
-        const user = await this.storage.getUser(userId);
+        const downloadCount = (await this.storage.getDownloadHistory(userId)).length;
 
         const welcomeMessage = `
 👋 *مرحباً بك، ${msg.from?.first_name || 'المستخدم'}*
 ━━━━━━━━━━━━━━━━━━━━━━━
 📊 *ملخص حسابك:*
 💰 *الرصيد المتاح:* \`${remaining}/${limit}\` نقطة
-📥 *عمليات التنزيل:* \`${user?.downloadHistory.length || 0}\` ملف
+📥 *عمليات التنزيل:* \`${downloadCount}\` ملف
 ━━━━━━━━━━━━━━━━━━━━━━━
 
 📝 *الخدمات المتاحة:*
@@ -135,6 +179,7 @@ export class UserService {
 
         await this.sendToChat(msg.chat.id, msg.message_thread_id, welcomeMessage, options);
     }
+
 
     public async handleStateInput(msg: any): Promise<void> {
         const userId = msg.from?.id;
@@ -198,9 +243,11 @@ export class UserService {
         } else if (state.action === 'WAITING_SUPPORT_MESSAGE') {
             if (!text) return;
             await this.forwardToAdmin(msg, text);
+            await this.notifyDashboard('support', { userId, message: text });
             await this.sendToChat(chatId, msg.message_thread_id, '✅ *تم استلام رسالتك بنجاح.* سيتم الرد عليك من قبل فريق الدعم قريباً.', { parse_mode: 'Markdown' });
             this.userStates.delete(userId);
         }
+
     }
 
     public async handleCallback(query: any, subAction: string): Promise<void> {
@@ -213,9 +260,8 @@ export class UserService {
 
         if (subAction === 'settings') {
             await this.handleSettings(chatId, userId, messageId);
-        } else if (subAction === 'set_timezone') {
-            await this.handleTimezoneSelection(chatId, messageId);
         } else if (subAction === 'tz_auto') {
+            // GPS-based timezone auto-detection still works
             this.userStates.set(userId, { action: 'WAITING_LOCATION', timestamp: Date.now() });
             await this.bot.telegram.deleteMessage(chatId, messageId);
             await this.sendToChat(chatId, query.message.message_thread_id, '📍 *اضغط الزر بالأسفل لمشاركة موقعك:*', {
@@ -227,20 +273,19 @@ export class UserService {
                 }
             });
         } else if (subAction.startsWith('tz:')) {
+            // Manual timezone selection still works if user shares location
             const offset = parseInt(subAction.split(':')[1]);
             await this.storage.setTimezone(userId, offset);
             await this.bot.telegram.answerCbQuery(query.id, '✅ تم حفظ التوقيت!');
             await this.handleSettings(chatId, userId, messageId);
-        } else if (subAction === 'set_quality') {
-            await this.handleQualitySelection(chatId, messageId);
-        } else if (subAction.startsWith('quality:')) {
-            const quality = subAction.split(':')[1];
-            await this.storage.updateUser({ id: userId, preferredQuality: quality });
-            await this.bot.telegram.answerCbQuery(query.id, '✅ تم حفظ تفضيلات الجودة!');
-            await this.handleSettings(chatId, userId, messageId);
         } else if (subAction === 'schedule') {
             this.userStates.set(userId, { action: 'WAITING_SCHEDULE_LINK', timestamp: Date.now() });
-            await this.editMessage(chatId, messageId, '📅 *أرسل رابط الفيديو أو القائمة لجدولتها:*', { parse_mode: 'Markdown' });
+            await this.editMessage(chatId, messageId, '📅 *أرسل رابط الفيديو أو القائمة لجدولتها:*', {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [[{ text: '🔙 رجوع', callback_data: 'user:start' }]]
+                }
+            });
         } else if (subAction.startsWith('sched_fmt:')) {
             const format = subAction.split(':')[1];
             const state = this.userStates.get(userId);
@@ -257,7 +302,7 @@ export class UserService {
                         ]
                     }
                 };
-                await this.editMessage(chatId, messageId, `✅ الصيغة: ${format === 'audio' ? 'صوت' : 'فيديو'}\n\n⏰ *متى تريد التحميل؟* (أرسل الوقت كتابةً أو اختر):`, opts);
+                await this.editMessage(chatId, messageId, `✅ الصيغة: ${format === 'audio' ? 'صوت' : 'فيديو'}\n\n⏰ *متى تريد التحميل؟*\n💡 أرسل الوقت بصيغة 24 ساعة (مثال: 14:30 أو 08:00) أو اختر:`, opts);
             }
         } else if (subAction.startsWith('sched_time:')) {
             const timeParam = subAction.split(':')[1];
@@ -277,7 +322,10 @@ export class UserService {
             await this.bot.telegram.deleteMessage(chatId, messageId);
             await this.sendToChat(chatId, query.message.message_thread_id, '❌ تم إلغاء العملية.');
         } else if (subAction === 'history') {
-            await this.handleHistory(chatId, userId, messageId);
+            await this.handleHistory(chatId, userId, messageId, 0);
+        } else if (subAction.startsWith('history:')) {
+            const page = parseInt(subAction.split(':')[1]) || 0;
+            await this.handleHistory(chatId, userId, messageId, page);
         } else if (subAction === 'help') {
             await this.editMessage(chatId, messageId, this.getHelpMessage(), {
                 parse_mode: 'Markdown',
@@ -292,18 +340,28 @@ export class UserService {
                 reply_markup: { inline_keyboard: [[{ text: '🔙 إلغاء', callback_data: 'user:start' }]] }
             });
         } else if (subAction === 'start') {
-            // Return to main menu via Edit
+            // Return to main menu via Edit - Same as handleStart
             const { remaining, limit } = await this.storage.getCredits(userId);
             const user = await this.storage.getUser(userId);
-            const welcomeMessage = `👋 *مرحباً بك، ${query.from.first_name}!*\n\n💎 *لوحة التحكم:*\n💰 *الرصيد:* \`${remaining}/${limit}\`\n📊 *التحميلات:* \`${user?.downloadHistory.length || 0}\``;
+
+            const welcomeMessage = `
+👋 *مرحباً بك، ${query.from.first_name || 'المستخدم'}*
+━━━━━━━━━━━━━━━━━━━━━━━
+📊 *ملخص حسابك:*
+💰 *الرصيد المتاح:* \`${remaining}/${limit}\` نقطة
+📥 *عمليات التنزيل:* \`${user?.downloadHistory.length || 0}\` ملف
+━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 *الخدمات المتاحة:*
+يمكنك إرسال رابط من YouTube أو TikTok أو Instagram أو أي منصة أخرى مدعومة لتحميل المحتوى مباشرة.`;
 
             await this.editMessage(chatId, messageId, welcomeMessage, {
                 parse_mode: 'Markdown',
                 reply_markup: {
                     inline_keyboard: [
-                        [{ text: '📅 جدولة تحميل', callback_data: 'user:schedule' }, { text: '⚙️ الإعدادات', callback_data: 'user:settings' }],
-                        [{ text: '📜 سجل تحميلاتي', callback_data: 'user:history' }, { text: '📚 دليل الاستخدام', callback_data: 'user:help' }],
-                        [{ text: 'ℹ️ عن البوت', callback_data: 'user:about' }, { text: '📞 الدعم', callback_data: 'user:support' }]
+                        [{ text: '📅 جدولة ذكية', callback_data: 'user:schedule' }, { text: '⚙️ الإعدادات', callback_data: 'user:settings' }],
+                        [{ text: '📜 السجل', callback_data: 'user:history' }, { text: '📚 الدليل', callback_data: 'user:help' }],
+                        [{ text: '💎 عن البوت', callback_data: 'user:about' }, { text: '📞 الدعم الفني', callback_data: 'user:support' }]
                     ]
                 }
             });
@@ -344,73 +402,86 @@ export class UserService {
         const tzString = `UTC${(user?.timezone || 0) >= 0 ? '+' : ''}${user?.timezone || 0}`;
 
         const text = `
-⚙️ *إعدادات النظام الكوني*
+⚙️ *الإعدادات*
 ━━━━━━━━━━━━━━━━━━━━
-🌍 *المنطقة الزمنية:* \`${tzString}\`
-🎬 *الجودة المفضلة:* \`${user?.preferredQuality || 'اسألني دائماً'}\`
+🌍 *المنطقة الزمنية:* \`${tzString}\` (تلقائي)
 🆔 *المعرف الرقمي:* \`${userId}\`
 ━━━━━━━━━━━━━━━━━━━━`;
 
         const keyboard = {
             inline_keyboard: [
-                [{ text: '🌍 ضبط التوقيت', callback_data: 'user:set_timezone' }],
-                [{ text: '🎬 الجودة الافتراضية', callback_data: 'user:set_quality' }],
-                [{ text: '🔙 العودة للقيادة', callback_data: 'user:start' }]
+                [{ text: '🔙 العودة للقائمة الرئيسية', callback_data: 'user:start' }]
             ]
         };
         await this.editMessage(chatId, messageId, text, { parse_mode: 'Markdown', reply_markup: keyboard });
     }
 
-    private async handleQualitySelection(chatId: number, messageId: number) {
-        const text = '🎬 *اختر الجودة المفضلة للتحميل:*';
-        const keyboard = {
-            inline_keyboard: [
-                [{ text: '❓ اسألني دائماً', callback_data: 'user:quality:ask' }],
-                [{ text: '💎 أفضل جودة (Best)', callback_data: 'user:quality:best' }],
-                [{ text: '🎧 صوت فقط (Audio)', callback_data: 'user:quality:audio' }],
-                [{ text: '📺 1080p', callback_data: 'user:quality:1080p' }, { text: '📺 720p', callback_data: 'user:quality:720p' }],
-                [{ text: '🔙 رجوع', callback_data: 'user:settings' }]
-            ]
-        };
-        await this.editMessage(chatId, messageId, text, { parse_mode: 'Markdown', reply_markup: keyboard });
-    }
+    // Note: handleQualitySelection and handleTimezoneSelection removed - settings are now automatic
 
-    private async handleTimezoneSelection(chatId: number, messageId: number) {
-        const text = '🌍 *كيف تريد ضبط الوقت؟*';
-        const keyboard = {
-            inline_keyboard: [
-                [{ text: '📍 تحديد تلقائي (GPS)', callback_data: 'user:tz_auto' }],
-                [{ text: '🇸🇦 السعودية (+3)', callback_data: 'user:tz:3' }, { text: '🇪🇬 مصر (+2)', callback_data: 'user:tz:2' }],
-                [{ text: '🇦🇪 الإمارات (+4)', callback_data: 'user:tz:4' }, { text: '🇩🇿 الجزائر (+1)', callback_data: 'user:tz:1' }],
-                [{ text: '🔙 رجوع', callback_data: 'user:settings' }]
-            ]
-        };
-        await this.editMessage(chatId, messageId, text, { parse_mode: 'Markdown', reply_markup: keyboard });
-    }
+    private async handleHistory(chatId: number, userId: number, messageId: number, page: number = 0) {
+        // Fetch history from database directly (user.downloadHistory is optimized to be empty)
+        const allHistory = await this.storage.getDownloadHistory(userId);
+        const PAGE_SIZE = 10;
+        const totalPages = Math.ceil(allHistory.length / PAGE_SIZE);
+        const startIndex = page * PAGE_SIZE;
+        const endIndex = Math.min(startIndex + PAGE_SIZE, allHistory.length);
+        const pageHistory = allHistory.slice(startIndex, endIndex);
 
-    private async handleHistory(chatId: number, userId: number, messageId: number) {
-        const user = await this.storage.getUser(userId);
-        const history = user?.downloadHistory.slice(-5).reverse() || [];
+        let text = `📜 *سجل التحميلات* (${allHistory.length > 0 ? startIndex + 1 : 0}-${endIndex}/${allHistory.length})\n━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-        let text = '📜 *آخر 5 تحميلات:*\n\n';
-        if (history.length === 0) text += '📭 السجل فارغ.';
-        else history.forEach((h, i) => text += `${i + 1}. [${h.filename}](${h.url})\n`);
+        if (allHistory.length === 0) {
+            text += '📭 السجل فارغ.';
+        } else {
+            pageHistory.forEach((h, i) => {
+                const num = startIndex + i + 1;
+                const title = h.title || h.filename || 'ملف';
+                text += `${num}. [${title}](${h.url})\n`;
+            });
+        }
+
+        const keyboard: any[][] = [];
+
+        // Pagination buttons
+        if (totalPages > 1) {
+            const navRow: any[] = [];
+            if (page > 0) {
+                navRow.push({ text: '◀️ السابق', callback_data: `user:history:${page - 1}` });
+            }
+            navRow.push({ text: `${page + 1}/${totalPages}`, callback_data: 'noop' });
+            if (page < totalPages - 1) {
+                navRow.push({ text: 'التالي ▶️', callback_data: `user:history:${page + 1}` });
+            }
+            keyboard.push(navRow);
+        }
+
+        keyboard.push([{ text: '🔙 رجوع', callback_data: 'user:start' }]);
 
         await this.editMessage(chatId, messageId, text, {
             parse_mode: 'Markdown',
             disable_web_page_preview: true,
-            reply_markup: { inline_keyboard: [[{ text: '🔙 رجوع', callback_data: 'user:start' }]] }
+            reply_markup: { inline_keyboard: keyboard }
         });
     }
 
+
     private async forwardToAdmin(msg: any, content: string) {
         // إرسال الرسالة لمجموعة الإدارة مع إضافة ID المستخدم للرد
-        const text = `📩 *رسالة دعم جديدة*\n\n👤 *من:* ${msg.from?.first_name}\n🆔 *ID:* \`${msg.from?.id}\`\n\n📝 *الرسالة:* ${content}`;
+        const userLink = msg.from?.username ? `@${msg.from.username}` : msg.from?.first_name || 'مستخدم';
+        const text = `📩 *رسالة دعم جديدة*
+━━━━━━━━━━━━━━━━━━━━
+👤 *من:* ${userLink}
+🆔 ID: \`${msg.from?.id}\`
+
+📝 *الرسالة:*
+${content}
+━━━━━━━━━━━━━━━━━━━━
+💡 *للرد:* قم بالـ Reply على هذه الرسالة`;
         await this.bot.telegram.sendMessage(this.adminConfig.adminGroupId, text, {
             parse_mode: 'Markdown',
             message_thread_id: this.adminConfig.topicControl
         });
     }
+
 
     public async handleHelp(msg: any): Promise<void> {
         await this.sendToChat(msg.chat.id, msg.message_thread_id, this.getHelpMessage(), { parse_mode: 'Markdown' });
@@ -447,14 +518,14 @@ export class UserService {
 🌍 دعم المناطق الزمنية
 
 **التطوير:**
-• تم تطويره بواسطة فريق مختص
-• البوت مفتوح المصدر وآمن تماماً
+• تم تطويره بواسطة @ContactAbedBot
 • بيانات المستخدمين محمية بأعلى معايير الأمان
 
 **المساعدة:**
 📞 استخدم زر الدعم للتواصل معنا
 ━━━━━━━━━━━━━━━━━━━━`;
     }
+
 
     private async handleAbout(chatId: number, messageId: number): Promise<void> {
         await this.editMessage(chatId, messageId, this.getAboutMessage(), {

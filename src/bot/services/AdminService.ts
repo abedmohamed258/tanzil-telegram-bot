@@ -370,6 +370,7 @@ export class AdminService {
           undefined,
           parseInt(params[1]),
           messageId,
+          parseInt(params[2]) || 0,
         );
         break;
       case 'dm':
@@ -405,6 +406,19 @@ export class AdminService {
           chatId,
           undefined,
           messageId,
+        );
+        break;
+      case 'cancel_task_ask':
+        await this.systemAdmin.showTaskCancelMenu(
+          chatId,
+          messageId,
+        );
+        break;
+      case 'cancel_task':
+        await this.systemAdmin.cancelTask(
+          chatId,
+          messageId,
+          params[1],
         );
         break;
       case 'live_activity':

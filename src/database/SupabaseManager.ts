@@ -503,15 +503,16 @@ export class SupabaseManager {
       const creditsUsed = users?.reduce((sum, u) => sum + (u.credits_used || 0), 0) || 0;
 
       const { data: downloads, error: downloadsError } = await this.supabase
-        .from('download_records')
-        .select('success, file_size');
+        .from('download_history')
+        .select('format, created_at');
 
       if (downloadsError) throw downloadsError;
 
       const totalDownloads = downloads?.length || 0;
-      const successfulDownloads = downloads?.filter(d => d.success).length || 0;
-      const failedDownloads = totalDownloads - successfulDownloads;
-      const totalBytesDownloaded = downloads?.reduce((sum, d) => sum + (d.file_size || 0), 0) || 0;
+      // All records in download_history are successful downloads
+      const successfulDownloads = totalDownloads;
+      const failedDownloads = 0;
+      const totalBytesDownloaded = 0; // download_history doesn't track file size
 
       return {
         totalUsers,

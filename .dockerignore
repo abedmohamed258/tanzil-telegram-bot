@@ -1,15 +1,38 @@
+# Dependencies & Build
 node_modules
-npm-debug.log
+dist
+
+# Environment & Secrets
 .env
+*.session
+cookies.txt
+
+# Version Control
 .git
 .gitignore
-README.md
+.github
+
+# Documentation
 *.md
-dist
+docs
+
+# Development
 .vscode
 .idea
 coverage
-.DS_Store
 tests
 tsconfig.test.json
+
+# Logs & Temp
+*.log
+npm-debug.log*
+temp
+data
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scripts
 generate-session.js
+scripts

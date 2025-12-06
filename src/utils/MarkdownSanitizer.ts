@@ -93,8 +93,8 @@ export class MarkdownSanitizer {
     options: any = {},
   ): Promise<any | null> {
     try {
-      // First attempt: send with Markdown
-      return await bot.sendMessage(chatId, text, {
+      // First attempt: send with Markdown (Telegraf uses bot.telegram.sendMessage)
+      return await bot.telegram.sendMessage(chatId, text, {
         ...options,
         parse_mode: 'Markdown',
       });
@@ -114,7 +114,7 @@ export class MarkdownSanitizer {
         try {
           // Fallback: strip Markdown formatting and send as plain text
           const plainText = this.stripMarkdown(text);
-          return await bot.sendMessage(chatId, plainText, {
+          return await bot.telegram.sendMessage(chatId, plainText, {
             ...options,
             parse_mode: undefined,
           });
@@ -149,10 +149,9 @@ export class MarkdownSanitizer {
     options: any = {},
   ): Promise<boolean> {
     try {
-      await bot.editMessageText(text, {
+      // Telegraf uses bot.telegram.editMessageText with different signature
+      await bot.telegram.editMessageText(chatId, messageId, undefined, text, {
         ...options,
-        chat_id: chatId,
-        message_id: messageId,
         parse_mode: 'Markdown',
       });
       return true;
@@ -171,10 +170,8 @@ export class MarkdownSanitizer {
 
         try {
           const plainText = this.stripMarkdown(text);
-          await bot.editMessageText(plainText, {
+          await bot.telegram.editMessageText(chatId, messageId, undefined, plainText, {
             ...options,
-            chat_id: chatId,
-            message_id: messageId,
             parse_mode: undefined,
           });
           return true;

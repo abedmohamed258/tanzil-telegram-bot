@@ -16,7 +16,7 @@ export class RequestQueue {
   private onQueueChange?: (queue: DownloadRequest[]) => void;
   private isProcessingNext: boolean = false;
 
-  constructor(maxConcurrent: number = 2) {
+  constructor(maxConcurrent: number = 4) {
     this.maxConcurrent = maxConcurrent;
     this.monitor = new ResourceMonitor();
     logger.info('🎯 RequestQueue initialized', { maxConcurrent });
@@ -95,15 +95,15 @@ export class RequestQueue {
           return;
         }
 
-        // Retry after cleanup delay (Faster recovery)
-        setTimeout(() => this.processNext(), 1000);
+        // Retry after cleanup delay (Fast recovery)
+        setTimeout(() => this.processNext(), 500);
         return;
       }
 
       // Check if circuit breaker is open
       if (this.monitor.isCircuitOpen()) {
         logger.warn('⏸️ Queue paused - circuit breaker open');
-        setTimeout(() => this.processNext(), 5000);
+        setTimeout(() => this.processNext(), 2000);
         return;
       }
 

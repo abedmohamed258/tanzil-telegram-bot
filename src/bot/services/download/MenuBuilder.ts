@@ -139,25 +139,17 @@ export class MenuBuilder {
 
   /**
    * Builds the inline keyboard with all format options
+   * Professional design: Video formats → Audio button → Cancel
    */
   private buildKeyboard(
     uuid: string,
     videoFormats: Format[],
-    videoCost: number,
+    _videoCost: number,
     audioCost: number,
   ): InlineKeyboardButton[][] {
     const keyboard: InlineKeyboardButton[][] = [];
 
-    // --- Quick Actions Header ---
-    keyboard.push([
-      {
-        text: `💎 أفضل جودة (${videoCost}ن)`,
-        callback_data: `dl:${uuid}:best`,
-      },
-      { text: `🎵 صوت MP3 (${audioCost}ن)`, callback_data: `dl:${uuid}:audio` },
-    ]);
-
-    // --- Video Section ---
+    // --- Video Section (Primary) ---
     if (videoFormats.length > 0) {
       // Check if we need to group by resolution
       if (videoFormats.length > this.GROUP_THRESHOLD) {
@@ -166,6 +158,11 @@ export class MenuBuilder {
         this.addVideoFormats(keyboard, uuid, videoFormats);
       }
     }
+
+    // --- Audio Button (Separate Row) ---
+    keyboard.push([
+      { text: `🎵 تحميل صوت MP3 (${audioCost}ن)`, callback_data: `dl:${uuid}:audio` },
+    ]);
 
     // --- Cancel Button ---
     keyboard.push([{ text: '❌ إلغاء', callback_data: `cancel:${uuid}` }]);

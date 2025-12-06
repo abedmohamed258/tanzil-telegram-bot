@@ -10,14 +10,36 @@ services:
     
     envVars:
       - key: BOT_TOKEN
-        sync: false # سيطلب منك Render إدخال القيمة عند الإنشاء
+        sync: false
       
-      # --- إضافات لميزة الستوريات (مهمة) ---
+      # --- Database (Required) ---
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      
+      # --- Admin Group ---
+      - key: ADMIN_GROUP_ID
+        sync: false
+      - key: TOPIC_GENERAL
+        value: 1
+      - key: TOPIC_CONTROL
+        value: 2
+      - key: TOPIC_LOGS
+        value: 4
+      - key: TOPIC_ERRORS
+        value: 6
+      
+      # --- Telegram Stories (Optional) ---
       - key: TELEGRAM_API_ID
         sync: false
       - key: TELEGRAM_API_HASH
         sync: false
       - key: TELEGRAM_SESSION
+        sync: false
+      
+      # --- Error Tracking (Optional) ---
+      - key: SENTRY_DSN
         sync: false
         
       # --- إعدادات البوت ---

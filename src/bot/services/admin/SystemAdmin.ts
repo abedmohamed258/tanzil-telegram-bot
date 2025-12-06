@@ -41,7 +41,7 @@ export class SystemAdmin {
     const stats = await this.storage.getStats();
     const queueLength = this.queue.getQueueLength();
     const scheduledTasks = await this.storage.getScheduledTasks();
-    
+
     const dashboardMsg = `🛠 *لوحة التحكم الرئيسية*
 ━━━━━━━━━━━━━━━━━━━
 📊 *إحصائيات النظام:*
@@ -299,7 +299,7 @@ export class SystemAdmin {
     const queueLength = this.queue.getQueueLength();
     const users = await this.storage.getAllUsers();
     const activeUsers = users.filter(u => new Date().getTime() - new Date(u.lastActive || 0).getTime() < 3600000).length;
-    
+
     const activityMsg = `📈 *مراقبة الأنشطة الحية*
 ━━━━━━━━━━━━━━━━━━━━━━━
 ⚡ *النشاط الفوري:*
@@ -365,5 +365,70 @@ export class SystemAdmin {
 
   private escapeMarkdown(text: string): string {
     return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
+  }
+
+  public async showTaskCancelMenu(
+    chatId: number,
+    messageId: number,
+  ): Promise<void> {
+    const tasks = await this.storage.getScheduledTasks();
+
+    if (tasks.length === 0) {
+      await this.editMessage(
+        chatId,
+        messageId,
+        '📅 *لا توجد مهام مجدولة لإلغائها.*',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔙 رجوع', callback_data: 'admin:scheduled' }],
+            ],
+          },
+        },
+      );
+      return;
+    }
+
+    let msg = `❌ *اختر المهمة لإلغائها:*\n━━━━━━━━━━━━━━━━\n\n`;
+    const keyboard: any[][] = [];
+
+    for (const task of tasks.slice(0, 10)) {
+      const time = new Date(task.executeAt).toLocaleTimeString('ar-SA', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const shortUrl = task.url.substring(0, 30) + (task.url.length > 30 ? '...' : '');
+      msg += `⏰ ${time} - ${shortUrl}\n`;
+      keyboard.push([
+        {
+          text: `❌ إلغاء (${time})`,
+          callback_data: `admin:cancel_task:${task.id}`,
+        },
+      ]);
+    }
+
+    keyboard.push([{ text: '🔙 رجوع', callback_data: 'admin:scheduled' }]);
+
+    await this.editMessage(chatId, messageId, msg, {
+      parse_mode: 'Markdown',
+      reply_markup: { inline_keyboard: keyboard },
+    });
+  }
+
+  public async cancelTask(
+    chatId: number,
+    messageId: number,
+    taskId: string,
+  ): Promise<void> {
+    try {
+      await this.storage.removeScheduledTask(taskId);
+      await this.bot.telegram.answerCbQuery(undefined as any, '✅ تم إلغاء المهمة!');
+    } catch (e) {
+      // Ignore
+    }
+
+    // Return to scheduled tasks view
+    await this.handleScheduledTasks(chatId, undefined, messageId);
   }
 }

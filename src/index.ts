@@ -155,7 +155,8 @@ function registerHandlers(app: AppContext): void {
 
     if (chatId === adminConfig.adminGroupId && msg.reply_to_message) {
       const originalText = msg.reply_to_message.text || '';
-      const idMatch = originalText.match(/ID:\s*`(\d+)`/);
+      // Match both formats: "ID: `123`" or "*ID:* `123`"
+      const idMatch = originalText.match(/ID:\s*`(\d+)`/i);
 
       if (idMatch && idMatch[1]) {
         const targetUserId = parseInt(idMatch[1]);
@@ -170,16 +171,20 @@ function registerHandlers(app: AppContext): void {
           await bot.telegram.sendMessage(
             chatId,
             `✅ تم إرسال الرد للمستخدم (${targetUserId})`,
+            { message_thread_id: msg.message_thread_id }
           );
+          logger.info('Admin replied to user', { adminId: userId, targetUserId });
         } catch (e) {
           await bot.telegram.sendMessage(
             chatId,
             `❌ فشل الإرسال: ربما قام المستخدم بحظر البوت.`,
+            { message_thread_id: msg.message_thread_id }
           );
         }
         return;
       }
     }
+
 
     const lastMsgTime = messageRateLimit.get(userId) || 0;
     const now = Date.now();

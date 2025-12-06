@@ -47,16 +47,13 @@ export class MediaDownloader {
         chatId,
         statusMessageId,
         undefined,
-        `📥 *تمت الإضافة للقائمة!* (الدور: ${this.queue.getQueueLength() + 1})\n⏳ جاري الانتظار...`,
-        {
-          parse_mode: 'Markdown',
-        },
+        `📥 تم استلام طلبك\n━━━━━━━━━━━━━━━\n📊 الترتيب في القائمة: ${this.queue.getQueueLength() + 1}\n⏳ الحالة: جاري الانتظار...`,
       );
     } else {
       const msg = await this.sendToChat(
         chatId,
         threadId,
-        `📥 *تمت الإضافة للقائمة!* (الدور: ${this.queue.getQueueLength() + 1})\n⏳ جاري الانتظار...`,
+        `📥 تم استلام طلبك\n━━━━━━━━━━━━━━━\n📊 الترتيب في القائمة: ${this.queue.getQueueLength() + 1}\n⏳ الحالة: جاري الانتظار...`,
       );
       statusMessageId = msg.message_id;
     }
@@ -104,16 +101,13 @@ export class MediaDownloader {
         chatId,
         statusMessageId,
         undefined,
-        `📥 *تمت إضافة الملف للقائمة!* (الدور: ${this.queue.getQueueLength() + 1})\n⏳ جاري معالجة الطلب...`,
-        {
-          parse_mode: 'Markdown',
-        },
+        `📥 تم استلام طلبك\n━━━━━━━━━━━━━━━\n📊 الترتيب في القائمة: ${this.queue.getQueueLength() + 1}\n⏳ الحالة: جاري الانتظار...`,
       );
     } else {
       const msg = await this.sendToChat(
         chatId,
         threadId,
-        `📥 *تمت إضافة الملف للقائمة!* (الدور: ${this.queue.getQueueLength() + 1})\n⏳ جاري معالجة الطلب...`,
+        `📥 تم استلام طلبك\n━━━━━━━━━━━━━━━\n📊 الترتيب في القائمة: ${this.queue.getQueueLength() + 1}\n⏳ الحالة: جاري الانتظار...`,
       );
       statusMessageId = msg.message_id;
     }
@@ -181,7 +175,7 @@ export class MediaDownloader {
 
       const filePath = result.filePath; // Type narrowing
 
-      await updateStatus('📤 *جاري الرفع إلى تيليجرام...*', false);
+      await updateStatus('📤 جاري رفع الملف...', false);
 
       const { fileName, title, caption } =
         await this.prepareFileMetadata(filePath);
@@ -251,12 +245,12 @@ export class MediaDownloader {
     updateStatus: (text: string, showCancelButton?: boolean) => Promise<void>,
   ) {
     let lastUpdate = 0;
-    const MIN_UPDATE_INTERVAL = 500; // Ultra-fast updates
+    const MIN_UPDATE_INTERVAL = 300; // Fast progress updates
     const loadingPhrases = [
-      '⏳ جاري التحميل...',
-      '📥 جاري استرجاع البيانات...',
-      '📦 جاري معالجة الملف...',
-      '⚙️ جاري إنهاء العملية...',
+      'جاري التحميل...',
+      'جاري استرجاع البيانات...',
+      'جاري معالجة الملف...',
+      'جاري إنهاء العملية...',
     ];
 
     return async (percent: number) => {
@@ -268,7 +262,7 @@ export class MediaDownloader {
 
         try {
           await updateStatus(
-            `⏳ *جاري التحميل...*\n${progressBar} ${percent.toFixed(1)}%\n\n${statusText}`,
+            `⏳ جاري التحميل\n━━━━━━━━━━━━━━━\n${progressBar} ${percent.toFixed(0)}%\n📋 ${statusText}`,
           );
         } catch (e) {
           /* Ignore */
@@ -283,7 +277,7 @@ export class MediaDownloader {
   }
 
   private getLoadingPhrase(percent: number, phrases: string[]): string {
-    if (percent === 100) return '✅ تم التحميل بنجاح! جاري رفع الملف...';
+    if (percent === 100) return '✅ اكتمل التحميل، جاري رفع الملف...';
     if (percent > 70) return phrases[2];
     if (percent > 30) return phrases[1];
     return phrases[0];
@@ -335,7 +329,7 @@ export class MediaDownloader {
     const path = await import('path');
     const fileName = path.basename(filePath);
     const title = fileName.substring(0, fileName.lastIndexOf('.'));
-    const caption = `${title}\n\n🤖 via @Tanzil_Downloader_bot`;
+    const caption = `via @Tanzil_Downloader_bot`;
 
     return { fileName, title, caption };
   }
@@ -422,7 +416,7 @@ export class MediaDownloader {
     });
     await this.storage.refundCredits(userId, reservedCredits || 0);
     await updateStatus(
-      `❌ *فشل التحميل*\n\nالسبب: ${(error as Error).message}`,
+      `❌ فشل التحميل\n━━━━━━━━━━━━━━━\n📋 السبب: ${(error as Error).message}`,
       false,
     );
     await this.fileManager.cleanupSession(sessionId);

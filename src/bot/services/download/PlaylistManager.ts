@@ -134,10 +134,11 @@ export class PlaylistManager {
     const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, session.totalVideos);
 
     const message =
-      `📺 *قائمة تشغيل:* ${session.totalVideos} فيديو\n` +
-      `📄 *صفحة:* ${page} / ${totalPages}\n` +
-      `✅ *المحدد:* ${session.indices.length}\n\n` +
-      `👇 *اضغط على الأرقام للاختيار:*`;
+      `📺 قائمة التشغيل\n━━━━━━━━━━━━━━━\n` +
+      `📊 الإجمالي: ${session.totalVideos} فيديو\n` +
+      `📄 الصفحة: ${page}/${totalPages}\n` +
+      `✅ المحدد: ${session.indices.length}\n\n` +
+      `👇 اضغط للاختيار:`;
 
     const keyboard: InlineKeyboardButton[][] = [];
 
@@ -291,9 +292,9 @@ export class PlaylistManager {
           session.menuMessageId,
           undefined,
           `✅ تم اختيار الصيغة: ${format === 'audio' ? 'صوت' : 'فيديو'}\n` +
-            `📋 عدد الفيديوهات: ${session.indices.length}\n\n` +
-            `⏰ *أرسل وقت الجدولة بصيغة 24 ساعة (مثال: 15:30):*\n` +
-            `أو استخدم الأزرار التالية:`,
+          `📋 عدد الفيديوهات: ${session.indices.length}\n\n` +
+          `⏰ *أرسل وقت الجدولة بصيغة 24 ساعة (مثال: 15:30):*\n` +
+          `أو استخدم الأزرار التالية:`,
           {
             parse_mode: 'Markdown',
             reply_markup: {
@@ -546,7 +547,7 @@ export class PlaylistManager {
 
     await this.bot.telegram.sendMessage(
       chatId,
-      `✅ تم اختيار ${indices.length} فيديو. سيتم إضافتها لقائمة التحميل.`,
+      `✅ تم الاختيار\n━━━━━━━━━━━━━━━\n📊 عدد الفيديوهات: ${indices.length}\n⏳ جاري إضافتها لقائمة التحميل...`,
     );
 
     // Queue ALL items immediately
@@ -617,7 +618,7 @@ export class PlaylistManager {
       });
       await this.bot.telegram.sendMessage(
         chatId,
-        `⚠️ تخطي الفيديو رقم ${index} بسبب خطأ: ${(e as Error).message}`,
+        `⚠️ تم تخطي فيديو ${index}\n📋 السبب: ${(e as Error).message}`,
       );
     }
   }

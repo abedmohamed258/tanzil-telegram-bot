@@ -74,10 +74,7 @@ function buildKeyboardRows(
 ): string[][] {
   const rows: string[][] = [];
 
-  // Quick actions header
-  rows.push(['💎 أفضل جودة', '🎵 صوت MP3']);
-
-  // Video section
+  // Video section (displayed first)
   if (videoFormats.length > 0) {
     rows.push(['📹 ─── جودات الفيديو ───']);
 
@@ -135,6 +132,9 @@ function buildKeyboardRows(
     });
     if (row.length > 0) rows.push(row);
   }
+
+  // Audio MP3 button (always present)
+  rows.push(['🎵 تحميل صوت MP3']);
 
   // Cancel button
   rows.push(['❌ إلغاء']);

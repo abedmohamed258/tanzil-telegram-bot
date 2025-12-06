@@ -87,7 +87,7 @@ export class DownloadManager {
       '--force-ipv4',
       '--no-warnings',
       '--socket-timeout',
-      '5',
+      '3',
       '--skip-download',
       validUrl,
     ];
@@ -101,7 +101,7 @@ export class DownloadManager {
       const output = await retryWithBackoff(
         () => this.executeYtDlp(args),
         2,
-        500,
+        200,
         'getVideoInfo',
       );
       const data: YtDlpVideoInfo = JSON.parse(output);
@@ -286,12 +286,14 @@ export class DownloadManager {
           '--external-downloader',
           'aria2c',
           '--external-downloader-args',
-          'aria2c:-x 16 -s 16 -k 1M',
+          'aria2c:-x 16 -s 16 -k 1M -j 16 --min-split-size=1M',
           '--no-mtime',
           '--force-ipv4',
           '--no-warnings',
           '--socket-timeout',
-          '10',
+          '5',
+          '--concurrent-fragments',
+          '8',
           validUrl,
         ];
 
@@ -340,7 +342,7 @@ export class DownloadManager {
         });
 
         if (attempt < this.maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
         }
       } finally {
         this.activeDownloads.delete(sessionId);
