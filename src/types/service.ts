@@ -30,7 +30,12 @@ export interface ScheduleRequestEventData {
   format?: string;
 }
 
-import { InlineKeyboardButton } from 'node-telegram-bot-api';
+// Inline keyboard button type (compatible with Telegraf)
+interface InlineKeyboardButton {
+  text: string;
+  callback_data?: string;
+  url?: string;
+}
 
 export interface EditMessageOptions {
   parse_mode?: 'Markdown' | 'HTML' | 'MarkdownV2';
