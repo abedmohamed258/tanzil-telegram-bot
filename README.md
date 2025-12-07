@@ -9,8 +9,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/yourusername/tanzil-bot)
-[![Code Coverage](https://img.shields.io/badge/coverage-70%25-yellow.svg)](https://github.com/yourusername/tanzil-bot)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/abedmohamed258/tanzil-telegram-bot)
+[![Code Coverage](https://img.shields.io/badge/coverage-70%25-yellow.svg)](https://github.com/abedmohamed258/tanzil-telegram-bot)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-purple.svg)](CODE_OF_CONDUCT.md)
 
@@ -40,6 +40,13 @@
 - **Admin Dashboard**: Full control panel for banning users, broadcasting messages, and viewing stats.
 - **Hard Ban System**: Permanent bans for violators.
 - **Graceful Shutdown**: Safe process termination ensuring no data loss.
+
+### 🌐 Multi-Group Support
+
+- **Group Control**: Add the bot to any group and control downloads with `/settings`.
+- **Auto Admin Sync**: Automatically syncs group admins for permissions.
+- **Download Toggle**: Enable/disable downloads per group.
+- **Activity Logging**: Track bot activity across all groups.
 
 ---
 
@@ -82,7 +89,7 @@ graph TD
 1.  **Clone the Galaxy:**
 
     ```bash
-    git clone https://github.com/yourusername/tanzil-bot.git
+    git clone https://github.com/abedmohamed258/tanzil-telegram-bot.git
     cd tanzil-bot
     ```
 
@@ -224,7 +231,7 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) - Universal video downloader
 - [node-telegram-bot-api](https://github.com/yagop/node-telegram-bot-api) - Telegram Bot API
 - [Supabase](https://supabase.com) - Database and authentication
-- All our amazing [contributors](https://github.com/yourusername/tanzil-bot/graphs/contributors)
+- All our amazing [contributors](https://github.com/abedmohamed258/tanzil-telegram-bot/graphs/contributors)
 
 ---
 
@@ -239,8 +246,8 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/tanzil-bot/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/tanzil-bot/discussions)
+- **Issues**: [GitHub Issues](https://github.com/abedmohamed258/tanzil-telegram-bot/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/abedmohamed258/tanzil-telegram-bot/discussions)
 - **Security**: See [SECURITY.md](SECURITY.md)
 
 ---

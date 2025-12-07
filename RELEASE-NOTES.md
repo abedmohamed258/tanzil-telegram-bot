@@ -120,7 +120,7 @@ TOPIC_ERRORS_ID=4
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/tanzil-bot.git
+git clone https://github.com/abedmohamed258/tanzil-telegram-bot.git
 cd tanzil-bot
 
 # 2. Install dependencies

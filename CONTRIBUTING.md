@@ -36,12 +36,12 @@ Before you begin, ensure you have the following installed:
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/tanzil-bot.git
-   cd tanzil-bot
+   git clone https://github.com/YOUR_USERNAME/tanzil-telegram-bot.git
+   cd tanzil-telegram-bot
    ```
 3. Add the upstream repository:
    ```bash
-   git remote add upstream https://github.com/ORIGINAL_OWNER/tanzil-bot.git
+   git remote add upstream https://github.com/abedmohamed258/tanzil-telegram-bot.git
    ```
 
 ## Development Setup

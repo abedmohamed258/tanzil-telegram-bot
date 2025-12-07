@@ -170,11 +170,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 ## Links
 
-- [GitHub Repository](https://github.com/yourusername/tanzil-bot)
-- [Issue Tracker](https://github.com/yourusername/tanzil-bot/issues)
-- [Documentation](https://github.com/yourusername/tanzil-bot/tree/main/docs)
+- [GitHub Repository](https://github.com/abedmohamed258/tanzil-telegram-bot)
+- [Issue Tracker](https://github.com/abedmohamed258/tanzil-telegram-bot/issues)
+- [Documentation](https://github.com/abedmohamed258/tanzil-telegram-bot/tree/main/docs)
 - [Security Policy](SECURITY.md)
 
 ---
 
-**Note**: This changelog is maintained manually. For a complete list of changes, see the [commit history](https://github.com/yourusername/tanzil-bot/commits/main).
+**Note**: This changelog is maintained manually. For a complete list of changes, see the [commit history](https://github.com/abedmohamed258/tanzil-telegram-bot/commits/main).

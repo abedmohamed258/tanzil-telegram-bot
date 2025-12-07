@@ -157,11 +157,11 @@ Before publishing, ensure:
 
 ### Publishing Scoped Package
 
-If you want to publish under a scope (e.g., `@yourusername/tanzil-bot`), update `package.json`:
+If you want to publish under a scope (e.g., `@abedmohamed258/tanzil-telegram-bot`), update `package.json`:
 
 ```json
 {
-  "name": "@yourusername/tanzil-bot"
+  "name": "@abedmohamed258/tanzil-telegram-bot"
 }
 ```
 
@@ -201,8 +201,8 @@ Before each release, update `CHANGELOG.md` following [Keep a Changelog](https://
 ### Security
 - Security patch description
 
-[Unreleased]: https://github.com/yourusername/tanzil-bot/compare/v1.2.0...HEAD
-[1.2.0]: https://github.com/yourusername/tanzil-bot/releases/tag/v1.2.0
+[Unreleased]: https://github.com/abedmohamed258/tanzil-telegram-bot/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/abedmohamed258/tanzil-telegram-bot/releases/tag/v1.2.0
 ```
 
 ### Automated CI/CD

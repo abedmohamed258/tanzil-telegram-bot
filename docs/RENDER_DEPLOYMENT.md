@@ -280,7 +280,7 @@ services:
    git init
    git add .
    git commit -m "Initial commit"
-   git remote add origin https://github.com/your-username/tanzil-bot.git
+   git remote add origin https://github.com/abedmohamed258/tanzil-telegram-bot.git
    git push -u origin main
    ```
 
