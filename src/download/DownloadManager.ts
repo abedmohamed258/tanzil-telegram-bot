@@ -53,6 +53,21 @@ export class DownloadManager {
   private infoCache = new Map<string, { data: VideoInfo; expires: number }>();
 
   /**
+   * Get extractor args for YouTube PO Token provider
+   * This tells yt-dlp to use the bgutil HTTP server for PO tokens
+   */
+  private getYouTubeExtractorArgs(): string[] {
+    // Only add these args if running in production (Docker with PO Token server)
+    if (process.env.NODE_ENV === 'production' || process.env.USE_POT_SERVER === 'true') {
+      return [
+        '--extractor-args',
+        'youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416',
+      ];
+    }
+    return [];
+  }
+
+  /**
    * Categorizes video resolution for grouping in quality menu
    * @param height - Video height in pixels
    * @returns Resolution category string
@@ -89,6 +104,8 @@ export class DownloadManager {
       '--socket-timeout',
       '3',
       '--skip-download',
+      // Add YouTube-specific extractor args for PO Token
+      ...this.getYouTubeExtractorArgs(),
       validUrl,
     ];
 
@@ -205,7 +222,12 @@ export class DownloadManager {
     const validUrl = UrlSchema.parse(url);
     logger.info('🔍 Fetching playlist info', { url: validUrl });
 
-    const args = ['--dump-json', '--flat-playlist', validUrl];
+    const args = [
+      '--dump-json',
+      '--flat-playlist',
+      ...this.getYouTubeExtractorArgs(),
+      validUrl,
+    ];
 
     if (cookies) {
       args.push('--cookies', cookies);
@@ -294,6 +316,7 @@ export class DownloadManager {
           '5',
           '--concurrent-fragments',
           '8',
+          ...this.getYouTubeExtractorArgs(),
           validUrl,
         ];
 
@@ -377,6 +400,7 @@ export class DownloadManager {
         '-o',
         outputTemplate,
         '--no-playlist',
+        ...this.getYouTubeExtractorArgs(),
         validUrl,
       ];
 
