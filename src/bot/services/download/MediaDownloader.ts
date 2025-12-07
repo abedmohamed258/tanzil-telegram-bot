@@ -331,7 +331,7 @@ export class MediaDownloader {
     const path = await import('path');
     const fileName = path.basename(filePath);
     const title = fileName.substring(0, fileName.lastIndexOf('.'));
-    const caption = `via @Tanzil_Downloader_bot`;
+    const caption = `@Tanzil_Downloader_bot`;
 
     return { fileName, title, caption };
   }
@@ -382,14 +382,20 @@ export class MediaDownloader {
       metadata: { isAudio },
     });
 
+    // Send notification to admin dashboard
     const adminGroupId = parseInt(process.env.ADMIN_GROUP_ID || '0');
-    const topicGeneral = parseInt(process.env.TOPIC_GENERAL_ID || '0');
-    if (adminGroupId && topicGeneral) {
+    const topicLogs = parseInt(process.env.TOPIC_LOGS || '0');
+    if (adminGroupId && topicLogs) {
+      const user = await this.storage.getUser(userId);
+      const userName = user?.firstName || 'مستخدم';
+      const timestamp = new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' });
+      const shortUrl = url.length > 40 ? url.substring(0, 40) + '...' : url;
+
       await logToTopic(
         this.bot,
         adminGroupId,
-        topicGeneral,
-        `📥 *Download Completed*\nUser: \`${userId}\`\nFile: ${fileName}\nURL: ${url}\nFormat: ${format || 'video'}`,
+        topicLogs,
+        `📥 *تحميل مكتمل*\n━━━━━━━━━━━━━━━\n👤 ${userName} (\`${userId}\`)\n📁 ${fileName.substring(0, 30)}\n🔗 ${shortUrl}\n🎬 ${isAudio ? 'صوت' : 'فيديو'}\n⏰ ${timestamp}`,
       );
     }
   }
@@ -412,16 +418,34 @@ export class MediaDownloader {
     reservedCredits: number | undefined,
     updateStatus: (text: string, showCancelButton?: boolean) => Promise<void>,
   ) {
+    const errorMessage = (error as Error).message;
     logger.error('Download processing failed', {
       requestId: sessionId,
-      error: (error as Error).message,
+      error: errorMessage,
     });
+
     await this.storage.refundCredits(userId, reservedCredits || 0);
     await updateStatus(
-      `❌ فشل التحميل\n━━━━━━━━━━━━━━━\n📋 السبب: ${(error as Error).message}`,
+      `❌ فشل التحميل\n━━━━━━━━━━━━━━━\n📋 السبب: ${errorMessage}`,
       false,
     );
     await this.fileManager.cleanupSession(sessionId);
+
+    // Send error notification to admin
+    const adminGroupId = parseInt(process.env.ADMIN_GROUP_ID || '0');
+    const topicErrors = parseInt(process.env.TOPIC_ERRORS || '0');
+    if (adminGroupId && topicErrors) {
+      const user = await this.storage.getUser(userId);
+      const userName = user?.firstName || 'مستخدم';
+      const timestamp = new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' });
+
+      await logToTopic(
+        this.bot,
+        adminGroupId,
+        topicErrors,
+        `❌ *فشل تحميل*\n━━━━━━━━━━━━━━━\n👤 ${userName} (\`${userId}\`)\n📋 ${errorMessage.substring(0, 100)}\n⏰ ${timestamp}`,
+      );
+    }
   }
 
   private async sendToChat(

@@ -372,14 +372,19 @@ export class DownloadService {
     quality: string,
   ): Promise<void> {
     const adminGroupId = parseInt(process.env.ADMIN_GROUP_ID || '0');
-    const topicGeneral = parseInt(process.env.TOPIC_GENERAL_ID || '0');
+    const topicLogs = parseInt(process.env.TOPIC_LOGS || '0');
 
-    if (adminGroupId && topicGeneral) {
+    if (adminGroupId && topicLogs) {
+      const user = await this.storage.getUser(userId);
+      const userName = user?.firstName || 'مستخدم';
+      const shortUrl = url.length > 40 ? url.substring(0, 40) + '...' : url;
+      const timestamp = new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' });
+
       await logToTopic(
         this.bot,
         adminGroupId,
-        topicGeneral,
-        `📥 *New Download Started*\nUser: ${userId}\nURL: ${url}\nFormat: ${quality}`,
+        topicLogs,
+        `▶️ *بدء تحميل*\n━━━━━━━━━━━━━━━\n👤 ${userName} (\`${userId}\`)\n🔗 ${shortUrl}\n🎬 ${quality === 'audio' ? 'صوت' : 'فيديو'}\n⏰ ${timestamp}`,
       );
     }
   }
@@ -596,7 +601,7 @@ export class DownloadService {
           chatId,
           { source: result.filePath },
           {
-            caption: result.caption || '📱 Story Downloaded',
+            caption: result.caption || '@Tanzil_Downloader_bot',
           },
         );
         await this.bot.telegram.deleteMessage(chatId, messageIdToEdit);
