@@ -4,7 +4,10 @@ import { BlockService } from '../BlockService';
 import { RequestQueue } from '../../../queue/RequestQueue';
 import { DownloadManager } from '../../../download/DownloadManager';
 
-
+/**
+ * UserManagement - إدارة المستخدمين
+ * مسؤول عن: ملفات المستخدمين، الحظر، الرسائل، السجلات
+ */
 export class UserManagement {
   private bot: Telegraf;
   private storage: SupabaseManager;
@@ -26,6 +29,9 @@ export class UserManagement {
     this.downloadManager = downloadManager;
   }
 
+  /**
+   * عرض ملف مستخدم مفصل
+   */
   public async showUserProfile(
     chatId: number,
     threadId: number | undefined,
@@ -36,67 +42,89 @@ export class UserManagement {
     if (!user) {
       await this.bot.telegram.sendMessage(
         chatId,
-        `❌ User \`${targetId}\` not found.`,
+        `❌ المستخدم \`${targetId}\` غير موجود.`,
         { parse_mode: 'Markdown', message_thread_id: threadId },
       );
       return;
     }
 
-    let blockStatus = '❓ Unknown';
+    // التحقق من حالة البوت
+    let botStatus = '⚪ غير معروف';
     try {
       await this.bot.telegram.sendChatAction(targetId, 'typing');
-      blockStatus = '🟢 Active';
+      botStatus = '🟢 نشط';
     } catch (error: unknown) {
       const err = error as any;
-      if (err.response?.statusCode === 403) blockStatus = '🔴 Blocked Bot';
+      if (err.response?.statusCode === 403) {
+        botStatus = '🔴 حظر البوت';
+      }
     }
 
     const isBlocked = await this.blockService.isBlocked(user.id);
     const blockDetails = await this.blockService.getBlockDetails(user.id);
-    const blockReason = blockDetails
-      ? `\n• Block Reason: ${blockDetails.reason}`
-      : '';
+
+    // حساب الأيام منذ الانضمام
+    const daysSinceJoin = Math.floor(
+      (Date.now() - new Date(user.joinedAt).getTime()) / 86400000
+    );
+
+    // حساب آخر نشاط
+    const lastActiveAgo = this.getTimeAgo(new Date(user.lastActive));
 
     const profileMsg = `
-👤 *User Control Center*
+👤 *مركز التحكم بالمستخدم*
+━━━━━━━━━━━━━━━━━━━━━
 
-🆔 *ID:* \`${user.id}\`
-👤 *Name:* ${this.escapeMarkdown(user.firstName)}
-🔗 *Handle:* ${user.username ? `@${this.escapeMarkdown(user.username)}` : 'None'}
+🆔 *المعرف:* \`${user.id}\`
+👤 *الاسم:* ${this.escapeMarkdown(user.firstName)}
+🔗 *اليوزر:* ${user.username ? `@${this.escapeMarkdown(user.username)}` : 'لا يوجد'}
 
-📊 *Status:*
-• Account: ${isBlocked ? '🔴 BLOCKED' : '🟢 Active'}${blockReason}
-• Bot State: ${blockStatus}
-• Joined: ${new Date(user.joinedAt).toLocaleDateString()}
-• Downloads: ${user.downloadHistory.length}
-• Credits: ${user.credits.used}/${100} (Remaining: ${100 - user.credits.used})
-        `.trim();
+📊 *الحالة:*
+├ الحساب: ${isBlocked ? '🔴 محظور' : '🟢 نشط'}${blockDetails ? `\n├ سبب الحظر: ${blockDetails.reason}` : ''}
+├ حالة البوت: ${botStatus}
+└ آخر نشاط: ${lastActiveAgo}
+
+📅 *معلومات العضوية:*
+├ الانضمام: ${new Date(user.joinedAt).toLocaleDateString('ar-SA')}
+├ عمر العضوية: ${daysSinceJoin} يوم
+└ المنطقة الزمنية: GMT${user.timezone >= 0 ? '+' : ''}${user.timezone}
+
+📥 *إحصائيات التحميل:*
+├ إجمالي التحميلات: ${user.downloadHistory.length}
+└ الرصيد: ${user.credits.used}/${100} (المتبقي: ${100 - user.credits.used})
+
+━━━━━━━━━━━━━━━━━━━━━
+`.trim();
 
     const keyboard = [
       [
-        { text: '📜 History', callback_data: `admin:history:${user.id}` },
-        { text: '📩 Send Msg', callback_data: `admin:dm:${user.id}` },
+        { text: '📜 سجل التحميلات', callback_data: `admin:history:${user.id}` },
+        { text: '📩 إرسال رسالة', callback_data: `admin:dm:${user.id}` },
       ],
       [
         isBlocked
-          ? { text: '✅ Unban User', callback_data: `admin:unban:${user.id}` }
-          : { text: '🚫 Ban User', callback_data: `admin:ban:${user.id}` },
+          ? { text: '✅ إلغاء الحظر', callback_data: `admin:unban:${user.id}` }
+          : { text: '🚫 حظر المستخدم', callback_data: `admin:ban:${user.id}` },
       ],
       [
-        {
-          text: '🔄 Reset Credits',
-          callback_data: `admin:reset_credits:${user.id}`,
-        },
+        { text: '🔄 إعادة الرصيد', callback_data: `admin:reset_credits:${user.id}` },
       ],
-      [{ text: '🔙 Back to List', callback_data: 'admin:users' }],
+      [{ text: '🔙 رجوع للقائمة', callback_data: 'admin:users' }],
     ];
 
-    if (messageIdToEdit) {
-      await this.editMessage(chatId, messageIdToEdit, profileMsg, {
-        parse_mode: 'Markdown',
-        reply_markup: { inline_keyboard: keyboard },
-      });
-    } else {
+    try {
+      if (messageIdToEdit) {
+        await this.editMessage(chatId, messageIdToEdit, profileMsg, {
+          parse_mode: 'Markdown',
+          reply_markup: { inline_keyboard: keyboard },
+        });
+      } else {
+        await this.sendToChat(chatId, threadId, profileMsg, {
+          parse_mode: 'Markdown',
+          reply_markup: { inline_keyboard: keyboard },
+        });
+      }
+    } catch {
       await this.sendToChat(chatId, threadId, profileMsg, {
         parse_mode: 'Markdown',
         reply_markup: { inline_keyboard: keyboard },
@@ -104,6 +132,9 @@ export class UserManagement {
     }
   }
 
+  /**
+   * تنفيذ حظر مستخدم
+   */
   public async executeBlock(
     chatId: number,
     threadId: number | undefined,
@@ -116,8 +147,8 @@ export class UserManagement {
     this.queue.purgeUser(targetId);
     await this.downloadManager.cancelUserDownloads(targetId);
 
-    const durationText = duration ? ` for ${duration}` : ' permanently';
-    const msg = `🚫 User \`${targetId}\` blocked${durationText}.\n📝 Reason: ${reason}`;
+    const durationText = duration ? ` لمدة ${duration}` : ' بشكل دائم';
+    const msg = `🚫 تم حظر المستخدم \`${targetId}\`${durationText}.\n📝 السبب: ${reason}`;
 
     if (messageIdToUpdate) {
       await this.showUserProfile(chatId, threadId, targetId, messageIdToUpdate);
@@ -126,6 +157,9 @@ export class UserManagement {
     }
   }
 
+  /**
+   * تنفيذ إلغاء حظر مستخدم
+   */
   public async executeUnban(
     chatId: number,
     threadId: number | undefined,
@@ -133,15 +167,19 @@ export class UserManagement {
     messageIdToUpdate?: number,
   ): Promise<void> {
     await this.blockService.unblockUser(targetId, chatId);
+
     if (messageIdToUpdate) {
       await this.showUserProfile(chatId, threadId, targetId, messageIdToUpdate);
     } else {
-      await this.sendToChat(chatId, threadId, `✅ User \`${targetId}\` unbanned.`, {
+      await this.sendToChat(chatId, threadId, `✅ تم إلغاء حظر المستخدم \`${targetId}\`.`, {
         parse_mode: 'Markdown',
       });
     }
   }
 
+  /**
+   * عرض سجل التحميلات
+   */
   public async executeHistory(
     chatId: number,
     _threadId: number | undefined,
@@ -153,41 +191,46 @@ export class UserManagement {
     if (!user) return;
 
     const allHistory = [...user.downloadHistory].reverse();
-    const PAGE_SIZE = 10;
+    const PAGE_SIZE = 8;
     const totalPages = Math.ceil(allHistory.length / PAGE_SIZE) || 1;
     const startIndex = page * PAGE_SIZE;
     const endIndex = Math.min(startIndex + PAGE_SIZE, allHistory.length);
     const pageHistory = allHistory.slice(startIndex, endIndex);
 
-    let historyMsg = `📂 *Download History for* \`${targetId}\`\n`;
-    historyMsg += `📊 (${allHistory.length > 0 ? startIndex + 1 : 0}-${endIndex}/${allHistory.length})\n\n`;
+    let historyMsg = `📂 *سجل التحميلات*\n`;
+    historyMsg += `👤 المستخدم: \`${targetId}\`\n`;
+    historyMsg += `━━━━━━━━━━━━━━━━\n\n`;
 
     if (allHistory.length === 0) {
-      historyMsg += 'No downloads recorded.';
+      historyMsg += '❌ لا توجد تحميلات مسجلة.';
     } else {
-      pageHistory.forEach((h, i) => {
+      for (let i = 0; i < pageHistory.length; i++) {
+        const h = pageHistory[i];
         const num = startIndex + i + 1;
-        const date = new Date(h.date).toLocaleDateString();
-        historyMsg += `${num}. [${h.title}](${h.url}) - 📅 ${date}\n`;
-      });
+        const date = new Date(h.date).toLocaleDateString('ar-SA');
+        const title = h.title.length > 30 ? h.title.substring(0, 30) + '...' : h.title;
+        historyMsg += `${num}. [${this.escapeMarkdown(title)}](${h.url})\n📅 ${date}\n\n`;
+      }
+      historyMsg += `━━━━━━━━━━━━━━━━\n`;
+      historyMsg += `📄 صفحة ${page + 1} من ${totalPages} (${allHistory.length} تحميل)`;
     }
 
     const keyboard: any[][] = [];
 
-    // Pagination buttons
+    // أزرار التنقل
     if (totalPages > 1) {
       const navRow: any[] = [];
       if (page > 0) {
-        navRow.push({ text: '◀️ Prev', callback_data: `admin:history:${targetId}:${page - 1}` });
+        navRow.push({ text: '◀️ السابق', callback_data: `admin:history:${targetId}:${page - 1}` });
       }
       navRow.push({ text: `${page + 1}/${totalPages}`, callback_data: 'noop' });
       if (page < totalPages - 1) {
-        navRow.push({ text: 'Next ▶️', callback_data: `admin:history:${targetId}:${page + 1}` });
+        navRow.push({ text: 'التالي ▶️', callback_data: `admin:history:${targetId}:${page + 1}` });
       }
       keyboard.push(navRow);
     }
 
-    keyboard.push([{ text: '🔙 Back to Profile', callback_data: `admin:profile:${targetId}` }]);
+    keyboard.push([{ text: '🔙 رجوع للملف', callback_data: `admin:profile:${targetId}` }]);
 
     await this.editMessage(chatId, messageId, historyMsg, {
       parse_mode: 'Markdown',
@@ -196,6 +239,9 @@ export class UserManagement {
     });
   }
 
+  /**
+   * إرسال رسالة خاصة لمستخدم
+   */
   public async executeDM(
     chatId: number,
     threadId: number | undefined,
@@ -205,21 +251,24 @@ export class UserManagement {
     try {
       await this.bot.telegram.sendMessage(
         targetId,
-        `📩 *Message from Admin*\n\n${text}`,
+        `📩 *رسالة من الإدارة*\n\n${text}`,
         { parse_mode: 'Markdown' },
       );
-      await this.sendToChat(chatId, threadId, `✅ Message sent to \`${targetId}\`.`, {
+      await this.sendToChat(chatId, threadId, `✅ تم إرسال الرسالة للمستخدم \`${targetId}\`.`, {
         parse_mode: 'Markdown',
       });
-    } catch (e) {
+    } catch {
       await this.sendToChat(
         chatId,
         threadId,
-        `❌ Failed to send message. User might have blocked the bot.`,
+        `❌ فشل إرسال الرسالة. ربما حظر المستخدم البوت.`,
       );
     }
   }
 
+  /**
+   * إعادة تعيين رصيد مستخدم
+   */
   public async executeResetCredits(
     chatId: number,
     threadId: number | undefined,
@@ -234,10 +283,22 @@ export class UserManagement {
       await this.sendToChat(
         chatId,
         threadId,
-        `✅ Credits reset for user \`${targetId}\`.`,
+        `✅ تم إعادة تعيين رصيد المستخدم \`${targetId}\`.`,
         { parse_mode: 'Markdown' },
       );
     }
+  }
+
+  // === المساعدات الخاصة ===
+
+  private getTimeAgo(date: Date): string {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+
+    if (seconds < 60) return 'الآن';
+    if (seconds < 3600) return `منذ ${Math.floor(seconds / 60)} دقيقة`;
+    if (seconds < 86400) return `منذ ${Math.floor(seconds / 3600)} ساعة`;
+    if (seconds < 604800) return `منذ ${Math.floor(seconds / 86400)} يوم`;
+    return new Date(date).toLocaleDateString('ar-SA');
   }
 
   private async sendToChat(
@@ -253,7 +314,7 @@ export class UserManagement {
       });
     } catch (error: unknown) {
       const err = error as any;
-      // Fallback to main chat if thread not found
+      // Fallback إذا لم يوجد التوبيك
       if (err?.response?.description?.includes('thread not found')) {
         return this.bot.telegram.sendMessage(chatId, text, options);
       }
