@@ -1,17 +1,26 @@
 # Use Node.js 20 with Debian Bookworm (Python 3.11) - Required by Supabase & yt-dlp
 FROM node:20-bookworm
 
-# Install Python3, pip, FFmpeg AND aria2
+# Install Python3, pip, FFmpeg, aria2, git, and supervisor
 RUN apt-get update && \
     apt-get install -y \
     python3 \
     python3-pip \
     ffmpeg \
-    aria2 && \
+    aria2 \
+    git \
+    supervisor && \
     rm -rf /var/lib/apt/lists/*
 
-# Install yt-dlp globally (--break-system-packages needed for Debian Bookworm PEP 668)
-RUN pip3 install --no-cache-dir --break-system-packages yt-dlp
+# Install yt-dlp and the PO Token provider plugin
+RUN pip3 install --no-cache-dir --break-system-packages yt-dlp bgutil-ytdlp-pot-provider
+
+# Clone and build the PO Token HTTP server
+WORKDIR /opt/pot-server
+RUN git clone --single-branch --branch 1.2.2 https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git . && \
+    cd server && \
+    npm install && \
+    npx tsc
 
 # Create app directory
 WORKDIR /app
@@ -23,7 +32,6 @@ RUN mkdir -p temp data downloads && chmod -R 777 temp data downloads
 COPY package*.json ./
 
 # Install ALL dependencies (including dev for TypeScript build)
-# Use --ignore-scripts because prepare script needs source files
 RUN npm ci --ignore-scripts
 
 # Copy application code
@@ -33,10 +41,35 @@ COPY . .
 RUN npm run build
 
 # Remove dev dependencies to reduce image size
-RUN npm prune --production
+RUN npm prune --omit=dev
 
-# Expose port for health checks (if using webhooks)
-EXPOSE 3000
+# Create supervisord configuration
+RUN mkdir -p /etc/supervisor/conf.d
+RUN echo '[supervisord]\n\
+    nodaemon=true\n\
+    logfile=/dev/stdout\n\
+    logfile_maxbytes=0\n\
+    \n\
+    [program:pot-server]\n\
+    command=node /opt/pot-server/server/build/main.js\n\
+    autostart=true\n\
+    autorestart=true\n\
+    stdout_logfile=/dev/stdout\n\
+    stdout_logfile_maxbytes=0\n\
+    stderr_logfile=/dev/stderr\n\
+    stderr_logfile_maxbytes=0\n\
+    \n\
+    [program:bot]\n\
+    command=node --expose-gc /app/dist/index.js\n\
+    autostart=true\n\
+    autorestart=true\n\
+    stdout_logfile=/dev/stdout\n\
+    stdout_logfile_maxbytes=0\n\
+    stderr_logfile=/dev/stderr\n\
+    stderr_logfile_maxbytes=0\n' > /etc/supervisor/conf.d/app.conf
 
-# Start the bot with garbage collection enabled
-CMD ["node", "--expose-gc", "dist/index.js"]
+# Expose ports
+EXPOSE 3000 4416
+
+# Start supervisord to manage both processes
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/app.conf"]
