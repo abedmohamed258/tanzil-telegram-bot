@@ -12,8 +12,11 @@ RUN apt-get update && \
     supervisor && \
     rm -rf /var/lib/apt/lists/*
 
-# Install yt-dlp and the PO Token provider plugin
-RUN pip3 install --no-cache-dir --break-system-packages yt-dlp bgutil-ytdlp-pot-provider
+# Install yt-dlp (nightly for latest PO Token support) and the PO Token provider plugin
+RUN pip3 install --no-cache-dir --break-system-packages --upgrade "yt-dlp[default]" && \
+    pip3 install --no-cache-dir --break-system-packages bgutil-ytdlp-pot-provider && \
+    yt-dlp --version && \
+    python3 -c "import yt_dlp_plugins.extractor.getpot_bgutil_http; print('✅ PO Token plugin loaded')"
 
 # Clone and build the PO Token HTTP server
 WORKDIR /opt/pot-server
