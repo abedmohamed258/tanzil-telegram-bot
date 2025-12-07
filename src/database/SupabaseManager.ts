@@ -7,6 +7,8 @@ import {
   BlockRecord,
   DbUserRecord,
   DbUpdateData,
+  BotGroup,
+  GroupSettings,
 } from '../types';
 import { logger } from '../utils/logger';
 import dotenv from 'dotenv';
@@ -503,6 +505,148 @@ export class SupabaseManager {
       downloadHistory: [], // Optimized: Don't load history by default
     };
   }
+
+  // =========================================================================
+  // نظام إدارة الجروبات المتعددة (Multi-Group Management)
+  // =========================================================================
+  private groupsCache: Map<number, BotGroup> = new Map();
+
+  /**
+   * جلب جروب بواسطة ID
+   */
+  async getGroup(groupId: number): Promise<BotGroup | null> {
+    // Check Cache
+    if (this.groupsCache.has(groupId)) {
+      return this.groupsCache.get(groupId)!;
+    }
+
+    const { data, error } = await this.supabase
+      .from('bot_groups')
+      .select('*')
+      .eq('id', groupId)
+      .single();
+
+    if (error || !data) return null;
+
+    const group = this.mapDbGroupToGroup(data);
+    this.groupsCache.set(groupId, group);
+    return group;
+  }
+
+  /**
+   * إضافة/تحديث جروب
+   */
+  async upsertGroup(group: BotGroup): Promise<void> {
+    const { error } = await this.supabase.from('bot_groups').upsert({
+      id: group.id,
+      title: group.title,
+      type: group.type,
+      added_at: group.addedAt,
+      added_by: group.addedBy,
+      is_active: group.isActive,
+      admin_ids: group.adminIds,
+      settings: group.settings,
+    }, { onConflict: 'id' });
+
+    if (error) {
+      logger.error('Supabase: Failed to upsert group', { groupId: group.id, error });
+      return;
+    }
+
+    this.groupsCache.set(group.id, group);
+    logger.info('Group upserted', { groupId: group.id, title: group.title });
+  }
+
+  /**
+   * تعطيل جروب (عند مغادرة البوت)
+   */
+  async deactivateGroup(groupId: number): Promise<void> {
+    const group = await this.getGroup(groupId);
+    if (group) {
+      group.isActive = false;
+      this.groupsCache.set(groupId, group);
+    }
+
+    await this.supabase
+      .from('bot_groups')
+      .update({ is_active: false })
+      .eq('id', groupId);
+  }
+
+  /**
+   * تحديث قائمة الأدمن للجروب
+   */
+  async updateGroupAdmins(groupId: number, adminIds: number[]): Promise<void> {
+    const group = await this.getGroup(groupId);
+    if (group) {
+      group.adminIds = adminIds;
+      this.groupsCache.set(groupId, group);
+    }
+
+    await this.supabase
+      .from('bot_groups')
+      .update({ admin_ids: adminIds })
+      .eq('id', groupId);
+  }
+
+  /**
+   * تحديث إعدادات الجروب
+   */
+  async updateGroupSettings(groupId: number, settings: Partial<GroupSettings>): Promise<void> {
+    const group = await this.getGroup(groupId);
+    if (!group) return;
+
+    group.settings = { ...group.settings, ...settings };
+    this.groupsCache.set(groupId, group);
+
+    await this.supabase
+      .from('bot_groups')
+      .update({ settings: group.settings })
+      .eq('id', groupId);
+  }
+
+  /**
+   * جلب جميع الجروبات النشطة
+   */
+  async getActiveGroups(): Promise<BotGroup[]> {
+    const { data, error } = await this.supabase
+      .from('bot_groups')
+      .select('*')
+      .eq('is_active', true);
+
+    if (error || !data) return [];
+    return data.map(g => this.mapDbGroupToGroup(g));
+  }
+
+  /**
+   * التحقق إذا كان المستخدم أدمن في جروب معين
+   */
+  async isGroupAdmin(groupId: number, userId: number): Promise<boolean> {
+    const group = await this.getGroup(groupId);
+    if (!group) return false;
+    return group.adminIds.includes(userId);
+  }
+
+  /**
+   * تحويل بيانات DB إلى BotGroup
+   */
+  private mapDbGroupToGroup(dbGroup: any): BotGroup {
+    return {
+      id: dbGroup.id,
+      title: dbGroup.title,
+      type: dbGroup.type,
+      addedAt: dbGroup.added_at,
+      addedBy: dbGroup.added_by,
+      isActive: dbGroup.is_active,
+      adminIds: dbGroup.admin_ids || [],
+      settings: dbGroup.settings || {
+        allowDownloads: true,
+        notifyOnJoin: true,
+        logDownloads: true,
+      },
+    };
+  }
+
   /**
    * Force save all data immediately (No-op for Supabase as it is real-time)
    * Kept for compatibility with StorageManager interface

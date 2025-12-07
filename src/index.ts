@@ -165,8 +165,8 @@ function registerHandlers(app: AppContext): void {
 
     if (chatId === adminConfig.adminGroupId && msg.reply_to_message) {
       const originalText = msg.reply_to_message.text || '';
-      // Match both formats: "ID: `123`" or "*ID:* `123`"
-      const idMatch = originalText.match(/ID:\s*`(\d+)`/i);
+      // Match both formats: "ID: `123`" or "ID: 123" (backticks consumed by Markdown)
+      const idMatch = originalText.match(/ID:\s*`?(\d+)`?/i);
 
       if (idMatch && idMatch[1]) {
         const targetUserId = parseInt(idMatch[1]);
@@ -297,6 +297,205 @@ function registerHandlers(app: AppContext): void {
         error: (error as Error).message,
         data: query.data,
       });
+    }
+  });
+
+  // =========================================================================
+  // نظام إدارة الجروبات المتعددة - Multi-Group Control
+  // =========================================================================
+  bot.on('my_chat_member', async (ctx) => {
+    try {
+      const update = ctx.myChatMember;
+      const chat = update.chat;
+      const newStatus = update.new_chat_member.status;
+      const oldStatus = update.old_chat_member.status;
+      const addedBy = update.from;
+
+      // تحقق أن هذا جروب وليس شات خاص
+      if (chat.type === 'private') return;
+
+      const chatId = chat.id;
+      const chatTitle = (chat as any).title || 'Unknown Group';
+      const chatType = chat.type as 'group' | 'supergroup' | 'channel';
+
+      // البوت أضيف لجروب جديد
+      if ((newStatus === 'member' || newStatus === 'administrator') &&
+        (oldStatus === 'left' || oldStatus === 'kicked')) {
+
+        // جلب قائمة أدمنز الجروب
+        let adminIds: number[] = [];
+        try {
+          const admins = await bot.telegram.getChatAdministrators(chatId);
+          adminIds = admins
+            .filter(a => !a.user.is_bot)
+            .map(a => a.user.id);
+        } catch {
+          // إذا فشل جلب الأدمنز، نضيف من أضاف البوت فقط
+          if (addedBy && !addedBy.is_bot) {
+            adminIds = [addedBy.id];
+          }
+        }
+
+        // تسجيل الجروب في قاعدة البيانات
+        await storage.upsertGroup({
+          id: chatId,
+          title: chatTitle,
+          type: chatType,
+          addedAt: new Date().toISOString(),
+          addedBy: addedBy?.id,
+          isActive: true,
+          adminIds,
+          settings: {
+            allowDownloads: true,
+            notifyOnJoin: true,
+            logDownloads: true,
+          },
+        });
+
+        // إرسال تنبيه لجروب الإدارة
+        await bot.telegram.sendMessage(
+          adminConfig.adminGroupId,
+          `📢 *البوت أضيف لجروب جديد*\n━━━━━━━━━━━━━━━━━━━━\n🏷️ *الاسم:* ${chatTitle}\n🆔 *ID:* \`${chatId}\`\n📊 *النوع:* ${chatType}\n👤 *أضافه:* ${addedBy?.first_name || 'Unknown'}\n👥 *الأدمنز:* ${adminIds.length}`,
+          { parse_mode: 'Markdown', message_thread_id: adminConfig.topicLogs }
+        );
+
+        // إرسال رسالة ترحيب في الجروب
+        await bot.telegram.sendMessage(
+          chatId,
+          `مرحباً! 👋\n\nأنا بوت *Tanzil* لتحميل الفيديوهات.\n\n📥 أرسل أي رابط من YouTube أو TikTok أو Instagram وسأقوم بتحميله لك.\n\n⚡ للتحكم بإعدادات البوت في هذا الجروب، استخدم /settings (للأدمنز فقط)`,
+          { parse_mode: 'Markdown' }
+        );
+
+        logger.info('Bot added to group', { chatId, chatTitle, addedBy: addedBy?.id });
+
+        // البوت أزيل من الجروب
+      } else if ((newStatus === 'left' || newStatus === 'kicked') &&
+        (oldStatus === 'member' || oldStatus === 'administrator')) {
+
+        // تعطيل الجروب في قاعدة البيانات
+        await storage.deactivateGroup(chatId);
+
+        // إرسال تنبيه لجروب الإدارة
+        await bot.telegram.sendMessage(
+          adminConfig.adminGroupId,
+          `🚪 *البوت أزيل من جروب*\n━━━━━━━━━━━━━━━━━━━━\n🏷️ *الاسم:* ${chatTitle}\n🆔 *ID:* \`${chatId}\``,
+          { parse_mode: 'Markdown', message_thread_id: adminConfig.topicLogs }
+        );
+
+        logger.info('Bot removed from group', { chatId, chatTitle });
+      }
+    } catch (error) {
+      logger.error('Error handling my_chat_member', { error: (error as Error).message });
+    }
+  });
+
+  // أمر إعدادات الجروب (للأدمنز فقط)
+  bot.command('settings', async (ctx) => {
+    const msg = ctx.message;
+    const chatId = msg.chat.id;
+    const userId = msg.from?.id;
+
+    // تحقق أن هذا جروب
+    if (msg.chat.type === 'private') {
+      await ctx.reply('هذا الأمر متاح فقط في الجروبات.');
+      return;
+    }
+
+    if (!userId) return;
+
+    // تحقق أن المستخدم أدمن في الجروب
+    const isAdmin = await storage.isGroupAdmin(chatId, userId);
+    if (!isAdmin) {
+      await ctx.reply('❌ هذا الأمر متاح للأدمنز فقط.');
+      return;
+    }
+
+    const group = await storage.getGroup(chatId);
+    if (!group) {
+      await ctx.reply('❌ الجروب غير مسجل. أعد إضافة البوت.');
+      return;
+    }
+
+    const settingsText = `
+⚙️ *إعدادات البوت في هذا الجروب*
+━━━━━━━━━━━━━━━━━━━━
+📥 *السماح بالتحميل:* ${group.settings.allowDownloads ? '✅' : '❌'}
+📢 *تنبيهات الانضمام:* ${group.settings.notifyOnJoin ? '✅' : '❌'}
+📝 *تسجيل التحميلات:* ${group.settings.logDownloads ? '✅' : '❌'}
+━━━━━━━━━━━━━━━━━━━━
+👥 *الأدمنز:* ${group.adminIds.length}`;
+
+    await ctx.reply(settingsText, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: group.settings.allowDownloads ? '🔴 تعطيل التحميل' : '🟢 تفعيل التحميل', callback_data: 'grp:toggle_downloads' },
+          ],
+          [
+            { text: '🔄 تحديث الأدمنز', callback_data: 'grp:sync_admins' },
+          ],
+        ],
+      },
+    });
+  });
+
+  // معالجة callbacks الجروبات
+  bot.on('callback_query', async (ctx, next) => {
+    const query = ctx.callbackQuery as any;
+    if (!query.data?.startsWith('grp:')) return next();
+
+    const chatId = query.message?.chat.id;
+    const userId = query.from.id;
+
+    if (!chatId) return;
+
+    // تحقق أن المستخدم أدمن
+    const isAdmin = await storage.isGroupAdmin(chatId, userId);
+    if (!isAdmin) {
+      await ctx.answerCbQuery('❌ للأدمنز فقط', { show_alert: true });
+      return;
+    }
+
+    const action = query.data.split(':')[1];
+
+    if (action === 'toggle_downloads') {
+      const group = await storage.getGroup(chatId);
+      if (group) {
+        const newValue = !group.settings.allowDownloads;
+        await storage.updateGroupSettings(chatId, { allowDownloads: newValue });
+        await ctx.answerCbQuery(newValue ? '✅ تم تفعيل التحميل' : '❌ تم تعطيل التحميل');
+
+        // تحديث الرسالة
+        group.settings.allowDownloads = newValue;
+        const settingsText = `
+⚙️ *إعدادات البوت في هذا الجروب*
+━━━━━━━━━━━━━━━━━━━━
+📥 *السماح بالتحميل:* ${group.settings.allowDownloads ? '✅' : '❌'}
+📢 *تنبيهات الانضمام:* ${group.settings.notifyOnJoin ? '✅' : '❌'}
+📝 *تسجيل التحميلات:* ${group.settings.logDownloads ? '✅' : '❌'}
+━━━━━━━━━━━━━━━━━━━━
+👥 *الأدمنز:* ${group.adminIds.length}`;
+
+        await ctx.editMessageText(settingsText, {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: group.settings.allowDownloads ? '🔴 تعطيل التحميل' : '🟢 تفعيل التحميل', callback_data: 'grp:toggle_downloads' }],
+              [{ text: '🔄 تحديث الأدمنز', callback_data: 'grp:sync_admins' }],
+            ],
+          },
+        });
+      }
+    } else if (action === 'sync_admins') {
+      try {
+        const admins = await bot.telegram.getChatAdministrators(chatId);
+        const adminIds = admins.filter(a => !a.user.is_bot).map(a => a.user.id);
+        await storage.updateGroupAdmins(chatId, adminIds);
+        await ctx.answerCbQuery(`✅ تم تحديث ${adminIds.length} أدمن`);
+      } catch {
+        await ctx.answerCbQuery('❌ فشل تحديث الأدمنز', { show_alert: true });
+      }
     }
   });
 

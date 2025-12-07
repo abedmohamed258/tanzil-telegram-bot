@@ -54,3 +54,22 @@ export interface UserProfile {
   activePlaylist: PlaylistSession | null;
   preferredQuality?: 'ask' | 'best' | 'audio' | string;
 }
+
+// نظام إدارة الجروبات المتعددة
+export interface BotGroup {
+  id: number; // Group/Supergroup ID (negative number)
+  title: string;
+  type: 'group' | 'supergroup' | 'channel';
+  addedAt: string; // ISO Date
+  addedBy?: number; // User who added the bot
+  isActive: boolean; // Bot still in group
+  adminIds: number[]; // Users who can control bot in this group
+  settings: GroupSettings;
+}
+
+export interface GroupSettings {
+  allowDownloads: boolean; // Allow users to download in this group
+  notifyOnJoin: boolean; // Notify when bot joins/leaves
+  logDownloads: boolean; // Log downloads from this group to admin
+}
+
