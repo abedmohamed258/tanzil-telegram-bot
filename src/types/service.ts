@@ -69,4 +69,8 @@ export interface DbUpdateData {
   last_name?: string;
   username?: string;
   preferred_quality?: string;
+  joined_at?: string;
+  timezone?: number;
+  credits_used?: number;
+  credits_last_reset?: string;
 }

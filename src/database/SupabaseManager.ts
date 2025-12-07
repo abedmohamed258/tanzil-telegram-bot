@@ -85,11 +85,24 @@ export class SupabaseManager {
   }): Promise<void> {
     const now = new Date().toISOString();
 
+    // Check if user exists
+    const existingUser = await this.getUser(user.id);
+    const isNewUser = !existingUser;
+
     // Update DB
     const updateData: DbUpdateData = {
       id: user.id,
       last_active: now,
     };
+
+    // For new users, set default values
+    if (isNewUser) {
+      updateData.joined_at = now;
+      updateData.timezone = 2; // Default: Cairo/Egypt
+      updateData.credits_used = 0;
+      updateData.credits_last_reset = now;
+    }
+
     if (user.first_name !== undefined) updateData.first_name = user.first_name;
     if (user.last_name !== undefined) updateData.last_name = user.last_name;
     if (user.username !== undefined) updateData.username = user.username;
@@ -109,15 +122,29 @@ export class SupabaseManager {
     }
 
     // Update Cache
-    const cachedUser = this.userCache.get(user.id);
-    if (cachedUser) {
-      if (user.first_name) cachedUser.firstName = user.first_name;
-      if (user.last_name) cachedUser.lastName = user.last_name;
-      if (user.username) cachedUser.username = user.username;
+    if (existingUser) {
+      if (user.first_name) existingUser.firstName = user.first_name;
+      if (user.last_name) existingUser.lastName = user.last_name;
+      if (user.username) existingUser.username = user.username;
       if (user.preferredQuality)
-        cachedUser.preferredQuality = user.preferredQuality;
-      cachedUser.lastActive = now;
-      this.userCache.set(user.id, cachedUser);
+        existingUser.preferredQuality = user.preferredQuality;
+      existingUser.lastActive = now;
+      this.userCache.set(user.id, existingUser);
+    } else {
+      // Cache new user
+      this.userCache.set(user.id, {
+        id: user.id,
+        firstName: user.first_name || 'Unknown',
+        lastName: user.last_name,
+        username: user.username,
+        joinedAt: now,
+        lastActive: now,
+        credits: { used: 0, lastReset: now },
+        timezone: 2,
+        activePlaylist: null,
+        downloadHistory: [],
+        preferredQuality: user.preferredQuality,
+      });
     }
   }
 
@@ -327,7 +354,17 @@ export class SupabaseManager {
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error || !data) return [];
+    if (error) {
+      logger.error('Failed to fetch download history', { userId, error: error.message });
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      logger.debug('No download history found', { userId });
+      return [];
+    }
+
+    logger.debug('Download history fetched', { userId, count: data.length });
 
     return data.map((d) => ({
       title: d.title,
