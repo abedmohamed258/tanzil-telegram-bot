@@ -21,4 +21,5 @@ export interface BotConfig {
   useWebhook: boolean;
   adminConfig: AdminConfig;
   dailyCredits: number;
+  youtubeCookiesPath?: string;
 }

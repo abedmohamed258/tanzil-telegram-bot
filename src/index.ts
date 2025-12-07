@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/node';
 import { loadConfig } from './utils/config';
 import { logger } from './utils/logger';
 import { FileManager } from './utils/FileManager';
+import { CookiesManager } from './utils/CookiesManager';
 import { SupabaseManager } from './database/SupabaseManager';
 import { URLValidator } from './utils/UrlValidator';
 import { DownloadManager } from './download/DownloadManager';
@@ -396,6 +397,7 @@ async function main() {
     logger.info('🚀 Starting Tanzil Telegram Bot...');
 
     const config = loadConfig();
+    CookiesManager.initialize(config.tempDirectory);
     logger.info('✅ Configuration loaded', {
       maxFileSize: `${(config.maxFileSize / 1024 / 1024).toFixed(0)}MB`,
       maxConcurrentDownloads: config.maxConcurrentDownloads,

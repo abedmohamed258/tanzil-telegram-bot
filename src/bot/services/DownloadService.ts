@@ -16,6 +16,7 @@ import { StoryService } from './StoryService';
 import { retryWithBackoff, withFallback } from '../../utils/retryHelper';
 import { MarkdownSanitizer } from '../../utils/MarkdownSanitizer';
 import { calculateCost } from '../../utils/logicHelpers';
+import { CookiesManager } from '../../utils/CookiesManager';
 
 // Sub-services
 import { PlaylistManager } from './download/PlaylistManager';
@@ -232,7 +233,7 @@ export class DownloadService {
     // Use retry logic with fallback for getting video info (2 retries, 300ms delay)
     const info = await withFallback(
       () =>
-        retryWithBackoff(() => this.downloadManager.getVideoInfo(url), 2, 300),
+        retryWithBackoff(() => this.downloadManager.getVideoInfo(url, CookiesManager.getCookiesPath()), 2, 300),
       async () => {
         logger.warn(
           'Failed to get video info after retries, using basic fallback',
@@ -482,7 +483,7 @@ export class DownloadService {
     try {
       // Use retry logic for getting video info
       const info = await retryWithBackoff(
-        () => this.downloadManager.getVideoInfo(state.url),
+        () => this.downloadManager.getVideoInfo(state.url, CookiesManager.getCookiesPath()),
         3,
         1000,
       );
@@ -769,7 +770,7 @@ export class DownloadService {
               index,
             );
             if (videoUrl) {
-              const info = await this.downloadManager.getVideoInfo(videoUrl);
+              const info = await this.downloadManager.getVideoInfo(videoUrl, CookiesManager.getCookiesPath());
               const cost = calculateCost(info.duration, format === 'audio');
 
               if (await this.storage.useCredits(userId, cost)) {
@@ -807,7 +808,7 @@ export class DownloadService {
           }
         }
       } else {
-        const info = await this.downloadManager.getVideoInfo(url);
+        const info = await this.downloadManager.getVideoInfo(url, CookiesManager.getCookiesPath());
         const cost = calculateCost(info.duration, format === 'audio');
 
         if (await this.storage.useCredits(userId, cost)) {

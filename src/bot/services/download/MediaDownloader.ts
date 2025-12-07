@@ -8,6 +8,7 @@ import { FileManager } from '../../../utils/FileManager';
 import { DownloadRequest } from '../../../types';
 import { logger, logToTopic } from '../../../utils/logger';
 import { retryWithBackoff } from '../../../utils/retryHelper';
+import { CookiesManager } from '../../../utils/CookiesManager';
 
 export class MediaDownloader {
   private bot: Telegraf;
@@ -293,19 +294,20 @@ export class MediaDownloader {
   ): Promise<{ success: boolean; filePath: string; error?: string }> {
     const result = await retryWithBackoff(
       async () => {
+        const cookies = CookiesManager.getCookiesPath();
         const downloadResult = isAudio
           ? await this.downloadManager.downloadAudio(
             url,
             sessionId,
             userId,
-            undefined,
+            cookies,
           )
           : await this.downloadManager.downloadVideo(
             url,
             format || 'best',
             sessionId,
             userId,
-            undefined,
+            cookies,
             (p) => {
               updateProgress(p).catch(console.error);
             },

@@ -10,6 +10,7 @@ import { calculateCost } from '../../../utils/logicHelpers';
 import { logger } from '../../../utils/logger';
 import { eventBus, BotEvents } from '../../../utils/EventBus';
 import { retryWithBackoff } from '../../../utils/retryHelper';
+import { CookiesManager } from '../../../utils/CookiesManager';
 
 // Import DownloadService type to avoid circular dependency
 // We use a minimal interface instead
@@ -82,7 +83,7 @@ export class PlaylistManager {
     try {
       // Use retry logic for getting playlist info
       const playlistInfo = await retryWithBackoff(
-        () => this.downloadManager.getPlaylistInfo(url),
+        () => this.downloadManager.getPlaylistInfo(url, CookiesManager.getCookiesPath()),
         3,
         1000,
       );
@@ -585,7 +586,7 @@ export class PlaylistManager {
       if (videoUrl) {
         // Use retry logic for getting video info
         const info = await retryWithBackoff(
-          () => this.downloadManager.getVideoInfo(videoUrl),
+          () => this.downloadManager.getVideoInfo(videoUrl, CookiesManager.getCookiesPath()),
           3,
           1000,
         );
