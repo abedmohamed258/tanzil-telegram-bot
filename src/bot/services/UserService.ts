@@ -326,6 +326,8 @@ export class UserService {
         } else if (subAction.startsWith('history:')) {
             const page = parseInt(subAction.split(':')[1]) || 0;
             await this.handleHistory(chatId, userId, messageId, page);
+        } else if (subAction === 'my_scheduled') {
+            await this.handleMyScheduled(chatId, userId, messageId);
         } else if (subAction === 'help') {
             await this.editMessage(chatId, messageId, this.getHelpMessage(), {
                 parse_mode: 'Markdown',
@@ -401,7 +403,7 @@ export class UserService {
         const user = await this.storage.getUser(userId);
         const tzString = `UTC${(user?.timezone || 0) >= 0 ? '+' : ''}${user?.timezone || 0}`;
 
-        const text = `
+        const settingsText = `
 ⚙️ *الإعدادات*
 ━━━━━━━━━━━━━━━━━━━━
 🌍 *المنطقة الزمنية:* \`${tzString}\` (تلقائي)
@@ -413,30 +415,40 @@ export class UserService {
                 [{ text: '🔙 العودة للقائمة الرئيسية', callback_data: 'user:start' }]
             ]
         };
-        await this.editMessage(chatId, messageId, text, { parse_mode: 'Markdown', reply_markup: keyboard });
+        await this.editMessage(chatId, messageId, settingsText, { parse_mode: 'Markdown', reply_markup: keyboard });
     }
 
     // Note: handleQualitySelection and handleTimezoneSelection removed - settings are now automatic
 
     private async handleHistory(chatId: number, userId: number, messageId: number, page: number = 0) {
-        // Fetch history from database directly (user.downloadHistory is optimized to be empty)
+        // Fetch history from database directly
         const allHistory = await this.storage.getDownloadHistory(userId);
-        const PAGE_SIZE = 10;
-        const totalPages = Math.ceil(allHistory.length / PAGE_SIZE);
+        const scheduledTasks = await this.storage.getScheduledTasks();
+        const userScheduled = scheduledTasks.filter(t => t.userId === userId);
+
+        const PAGE_SIZE = 8;
+        const totalPages = Math.ceil(allHistory.length / PAGE_SIZE) || 1;
         const startIndex = page * PAGE_SIZE;
         const endIndex = Math.min(startIndex + PAGE_SIZE, allHistory.length);
         const pageHistory = allHistory.slice(startIndex, endIndex);
 
-        let text = `📜 *سجل التحميلات* (${allHistory.length > 0 ? startIndex + 1 : 0}-${endIndex}/${allHistory.length})\n━━━━━━━━━━━━━━━━━━━━\n\n`;
+        let text = `📜 *سجل التحميلات*\n`;
+        text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
         if (allHistory.length === 0) {
-            text += '📭 السجل فارغ.';
+            text += '📭 *السجل فارغ.*\n\n';
+            text += '💡 عند تحميل أي ملف سيتم تسجيله هنا تلقائياً.';
         } else {
-            pageHistory.forEach((h, i) => {
+            for (let i = 0; i < pageHistory.length; i++) {
+                const h = pageHistory[i];
                 const num = startIndex + i + 1;
-                const title = h.title || h.filename || 'ملف';
-                text += `${num}. [${title}](${h.url})\n`;
-            });
+                const title = (h.title || h.filename || 'ملف').substring(0, 25);
+                const date = new Date(h.date).toLocaleDateString('ar-SA');
+                const format = h.format === 'audio' ? '🎧' : '🎬';
+                text += `${num}. ${format} [${title}](${h.url})\n   📅 ${date}\n\n`;
+            }
+            text += `━━━━━━━━━━━━━━━━━━━━\n`;
+            text += `📊 إجمالي: ${allHistory.length} | صفحة ${page + 1}/${totalPages}`;
         }
 
         const keyboard: any[][] = [];
@@ -454,20 +466,24 @@ export class UserService {
             keyboard.push(navRow);
         }
 
+        // Show scheduled tasks count if any
+        if (userScheduled.length > 0) {
+            keyboard.push([{ text: `📅 المجدولة (${userScheduled.length})`, callback_data: 'user:my_scheduled' }]);
+        }
+
         keyboard.push([{ text: '🔙 رجوع', callback_data: 'user:start' }]);
 
         await this.editMessage(chatId, messageId, text, {
             parse_mode: 'Markdown',
-            disable_web_page_preview: true,
+            link_preview_options: { is_disabled: true },
             reply_markup: { inline_keyboard: keyboard }
         });
     }
 
-
     private async forwardToAdmin(msg: any, content: string) {
         // إرسال الرسالة لمجموعة الإدارة مع إضافة ID المستخدم للرد
         const userLink = msg.from?.username ? `@${msg.from.username}` : msg.from?.first_name || 'مستخدم';
-        const text = `📩 *رسالة دعم جديدة*
+        const supportText = `📩 *رسالة دعم جديدة*
 ━━━━━━━━━━━━━━━━━━━━
 👤 *من:* ${userLink}
 🆔 ID: \`${msg.from?.id}\`
@@ -476,9 +492,41 @@ export class UserService {
 ${content}
 ━━━━━━━━━━━━━━━━━━━━
 💡 *للرد:* قم بالـ Reply على هذه الرسالة`;
-        await this.bot.telegram.sendMessage(this.adminConfig.adminGroupId, text, {
+        await this.bot.telegram.sendMessage(this.adminConfig.adminGroupId, supportText, {
             parse_mode: 'Markdown',
             message_thread_id: this.adminConfig.topicControl
+        });
+    }
+
+    private async handleMyScheduled(chatId: number, userId: number, messageId: number) {
+        const scheduledTasks = await this.storage.getScheduledTasks();
+        const userTasks = scheduledTasks.filter(t => t.userId === userId);
+
+        let text = `📅 *تحميلاتك المجدولة*\n━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+        if (userTasks.length === 0) {
+            text += '📭 *لا توجد تحميلات مجدولة.*';
+        } else {
+            for (let i = 0; i < userTasks.length; i++) {
+                const task = userTasks[i];
+                const shortUrl = task.url.length > 30 ? task.url.substring(0, 30) + '...' : task.url;
+                const time = new Date(task.executeAt).toLocaleString('ar-SA', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    day: 'numeric',
+                    month: 'short',
+                });
+                const format = task.options?.format === 'audio' ? '🎧' : '🎬';
+                text += `${i + 1}. ${format} ${shortUrl}\n`;
+                text += `   ⏰ ${time}\n\n`;
+            }
+        }
+
+        await this.editMessage(chatId, messageId, text, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [[{ text: '🔙 رجوع للسجل', callback_data: 'user:history' }]]
+            }
         });
     }
 
