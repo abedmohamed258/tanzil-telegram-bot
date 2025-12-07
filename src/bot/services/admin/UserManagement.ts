@@ -71,6 +71,10 @@ export class UserManagement {
     // حساب آخر نشاط
     const lastActiveAgo = this.getTimeAgo(new Date(user.lastActive));
 
+    // جلب عدد التحميلات من قاعدة البيانات
+    const downloadHistory = await this.storage.getDownloadHistory(user.id);
+    const downloadCount = downloadHistory.length;
+
     const profileMsg = `
 👤 *مركز التحكم بالمستخدم*
 ━━━━━━━━━━━━━━━━━━━━━
@@ -90,7 +94,7 @@ export class UserManagement {
 └ المنطقة الزمنية: GMT${user.timezone >= 0 ? '+' : ''}${user.timezone}
 
 📥 *إحصائيات التحميل:*
-├ إجمالي التحميلات: ${user.downloadHistory.length}
+├ إجمالي التحميلات: ${downloadCount}
 └ الرصيد: ${user.credits.used}/${100} (المتبقي: ${100 - user.credits.used})
 
 ━━━━━━━━━━━━━━━━━━━━━
@@ -187,10 +191,9 @@ export class UserManagement {
     messageId: number,
     page: number = 0,
   ): Promise<void> {
-    const user = await this.storage.getUser(targetId);
-    if (!user) return;
+    // جلب السجل من قاعدة البيانات مباشرة (وليس من الكاش)
+    const allHistory = await this.storage.getDownloadHistory(targetId);
 
-    const allHistory = [...user.downloadHistory].reverse();
     const PAGE_SIZE = 8;
     const totalPages = Math.ceil(allHistory.length / PAGE_SIZE) || 1;
     const startIndex = page * PAGE_SIZE;
@@ -202,14 +205,15 @@ export class UserManagement {
     historyMsg += `━━━━━━━━━━━━━━━━\n\n`;
 
     if (allHistory.length === 0) {
-      historyMsg += '❌ لا توجد تحميلات مسجلة.';
+      historyMsg += '❌ لا توجد تحميلات مسجلة في قاعدة البيانات.';
     } else {
       for (let i = 0; i < pageHistory.length; i++) {
         const h = pageHistory[i];
         const num = startIndex + i + 1;
         const date = new Date(h.date).toLocaleDateString('ar-SA');
-        const title = h.title.length > 30 ? h.title.substring(0, 30) + '...' : h.title;
-        historyMsg += `${num}. [${this.escapeMarkdown(title)}](${h.url})\n📅 ${date}\n\n`;
+        const title = (h.title || h.filename || 'ملف').substring(0, 30);
+        const format = h.format === 'audio' ? '🎧' : '🎬';
+        historyMsg += `${num}. ${format} [${this.escapeMarkdown(title)}](${h.url})\n   📅 ${date}\n\n`;
       }
       historyMsg += `━━━━━━━━━━━━━━━━\n`;
       historyMsg += `📄 صفحة ${page + 1} من ${totalPages} (${allHistory.length} تحميل)`;
