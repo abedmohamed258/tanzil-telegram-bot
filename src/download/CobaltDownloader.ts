@@ -12,23 +12,14 @@ interface CobaltResponse {
 }
 
 /**
- * CobaltDownloader - Uses Cobalt API as fallback for yt-dlp
- * Supports: Instagram, TikTok, Twitter, YouTube, and 25+ other platforms
- * 
- * This is a fallback service when yt-dlp fails (e.g., login required)
+ * CobaltDownloader - Uses multiple fallback APIs for Instagram/TikTok
+ * When yt-dlp fails, tries multiple third-party services
  */
 export class CobaltDownloader {
-    // Multiple public Cobalt instances for reliability
-    private readonly COBALT_INSTANCES = [
-        'https://api.cobalt.tools',
-        'https://co.wuk.sh',
-        'https://cobalt.canine.tools',
-    ];
-
-    private currentInstanceIndex = 0;
+    private currentServiceIndex = 0;
 
     /**
-     * Get direct download URL from Cobalt API
+     * Get direct download URL using multiple fallback services
      */
     async getDownloadUrl(
         url: string,
@@ -37,98 +28,238 @@ export class CobaltDownloader {
             audioOnly?: boolean;
         } = {}
     ): Promise<{ url: string; filename: string } | null> {
-        const { quality = '1080', audioOnly = false } = options;
+        const services = [
+            () => this.trySnapinsta(url),
+            () => this.tryIndown(url),
+            () => this.trySaveFrom(url),
+            () => this.tryCobaltInstance(url, options.quality || '1080', options.audioOnly || false),
+        ];
 
-        for (let i = 0; i < this.COBALT_INSTANCES.length; i++) {
-            const instanceUrl = this.COBALT_INSTANCES[(this.currentInstanceIndex + i) % this.COBALT_INSTANCES.length];
-
+        for (let i = 0; i < services.length; i++) {
+            const serviceIndex = (this.currentServiceIndex + i) % services.length;
             try {
-                const result = await this.tryInstance(instanceUrl, url, quality, audioOnly);
+                const result = await services[serviceIndex]();
                 if (result) {
-                    // Remember successful instance for next time
-                    this.currentInstanceIndex = (this.currentInstanceIndex + i) % this.COBALT_INSTANCES.length;
+                    this.currentServiceIndex = serviceIndex;
                     return result;
                 }
             } catch (error) {
-                logger.warn(`Cobalt instance ${instanceUrl} failed`, { error: (error as Error).message });
+                logger.warn(`Download service ${serviceIndex} failed`, {
+                    error: (error as Error).message
+                });
                 continue;
             }
         }
 
-        logger.error('All Cobalt instances failed');
+        logger.error('All download services failed');
         return null;
     }
 
     /**
-     * Try a single Cobalt instance
+     * Try Snapinsta.to API (works for Instagram)
      */
-    private async tryInstance(
-        instanceUrl: string,
-        videoUrl: string,
-        quality: string,
-        audioOnly: boolean
-    ): Promise<{ url: string; filename: string } | null> {
+    private async trySnapinsta(url: string): Promise<{ url: string; filename: string } | null> {
+        if (!url.includes('instagram.com')) return null;
+
+        logger.info('🔗 Trying Snapinsta', { url });
+
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+        const timeout = setTimeout(() => controller.abort(), 20000);
 
         try {
-            logger.info('🔗 Trying Cobalt instance', { instance: instanceUrl, url: videoUrl });
+            // First request to get token
+            const formData = new URLSearchParams();
+            formData.append('url', url);
 
-            const response = await fetch(instanceUrl, {
+            const response = await fetch('https://snapinsta.to/api/convert', {
                 method: 'POST',
                 headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Origin': 'https://snapinsta.to',
+                    'Referer': 'https://snapinsta.to/',
                 },
-                body: JSON.stringify({
-                    url: videoUrl,
-                    videoQuality: quality,
-                    downloadMode: audioOnly ? 'audio' : 'auto',
-                    audioFormat: 'mp3',
-                    filenameStyle: 'basic',
-                }),
+                body: formData.toString(),
                 signal: controller.signal,
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                throw new Error(`HTTP ${response.status}`);
             }
 
-            const data = await response.json() as CobaltResponse;
+            const data = await response.json();
 
-            // Handle different response types
-            if (data.status === 'error') {
-                throw new Error(data.error?.code || 'Unknown error');
-            }
-
-            if (data.status === 'tunnel' || data.status === 'redirect') {
-                logger.info('✅ Cobalt returned download URL', {
-                    status: data.status,
-                    filename: data.filename
-                });
+            if (data.url) {
+                logger.info('✅ Snapinsta succeeded');
                 return {
-                    url: data.url || '',
-                    filename: data.filename || 'download.mp4',
+                    url: data.url,
+                    filename: 'instagram_video.mp4',
                 };
             }
 
-            if (data.status === 'picker' && data.picker && data.picker.length > 0) {
-                // Multiple items (e.g., Instagram carousel) - return first one
-                const firstItem = data.picker[0];
-                return {
-                    url: firstItem.url,
-                    filename: 'download.mp4',
-                };
-            }
-
-            throw new Error(`Unexpected response status: ${data.status}`);
+            throw new Error('No URL in response');
         } finally {
             clearTimeout(timeout);
         }
     }
 
     /**
-     * Check if URL is supported by Cobalt
+     * Try indown.io API
+     */
+    private async tryIndown(url: string): Promise<{ url: string; filename: string } | null> {
+        if (!url.includes('instagram.com')) return null;
+
+        logger.info('🔗 Trying Indown', { url });
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+
+        try {
+            const response = await fetch('https://indown.io/api/media', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Origin': 'https://indown.io',
+                    'Referer': 'https://indown.io/',
+                },
+                body: JSON.stringify({ url }),
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // indown returns different formats
+            if (data.video_url || data.download_url) {
+                logger.info('✅ Indown succeeded');
+                return {
+                    url: data.video_url || data.download_url,
+                    filename: 'instagram_video.mp4',
+                };
+            }
+
+            throw new Error('No URL in response');
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    /**
+     * Try savefrom.net style API
+     */
+    private async trySaveFrom(url: string): Promise<{ url: string; filename: string } | null> {
+        logger.info('🔗 Trying SaveFrom style API', { url });
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+
+        try {
+            // Use a simple API endpoint
+            const response = await fetch(`https://api.savefrom.biz/api/convert?url=${encodeURIComponent(url)}`, {
+                method: 'GET',
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                },
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.url || data.download || data.video) {
+                logger.info('✅ SaveFrom succeeded');
+                return {
+                    url: data.url || data.download || data.video,
+                    filename: 'video.mp4',
+                };
+            }
+
+            throw new Error('No URL in response');
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    /**
+     * Try Cobalt instances (original implementation)
+     */
+    private async tryCobaltInstance(
+        videoUrl: string,
+        quality: string,
+        audioOnly: boolean
+    ): Promise<{ url: string; filename: string } | null> {
+        const COBALT_INSTANCES = [
+            'https://api.cobalt.tools',
+            'https://cobalt.canine.tools',
+        ];
+
+        for (const instanceUrl of COBALT_INSTANCES) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15000);
+
+            try {
+                logger.info('🔗 Trying Cobalt instance', { instance: instanceUrl });
+
+                const response = await fetch(instanceUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: videoUrl,
+                        videoQuality: quality,
+                        downloadMode: audioOnly ? 'audio' : 'auto',
+                        audioFormat: 'mp3',
+                        filenameStyle: 'basic',
+                    }),
+                    signal: controller.signal,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json() as CobaltResponse;
+
+                if (data.status === 'error') {
+                    throw new Error(data.error?.code || 'Unknown error');
+                }
+
+                if (data.status === 'tunnel' || data.status === 'redirect') {
+                    logger.info('✅ Cobalt succeeded');
+                    return {
+                        url: data.url || '',
+                        filename: data.filename || 'download.mp4',
+                    };
+                }
+
+                if (data.status === 'picker' && data.picker && data.picker.length > 0) {
+                    const firstItem = data.picker[0];
+                    return {
+                        url: firstItem.url,
+                        filename: 'download.mp4',
+                    };
+                }
+            } catch (error) {
+                logger.warn(`Cobalt ${instanceUrl} failed`, { error: (error as Error).message });
+            } finally {
+                clearTimeout(timeout);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if URL is supported
      */
     isSupportedUrl(url: string): boolean {
         const supportedDomains = [
@@ -141,15 +272,7 @@ export class CobaltDownloader {
             'reddit.com',
             'twitch.tv',
             'vimeo.com',
-            'soundcloud.com',
             'facebook.com',
-            'pinterest.com',
-            'tumblr.com',
-            'bilibili.com',
-            'dailymotion.com',
-            'ok.ru',
-            'vk.com',
-            'rutube.ru',
         ];
 
         try {

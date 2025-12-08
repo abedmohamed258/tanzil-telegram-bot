@@ -286,7 +286,8 @@ export class SystemAdmin {
       const status = isBlocked ? '🔴' : '🟢';
       const name = this.escapeHtml(u.firstName);
       const num = startIndex + i + 1;
-      listMsg += `${num}. ${status} <a href="tg://user?id=${u.id}">${name}</a>\n`;
+      // Show both linked name and ID (Telegram links only work if user is in same chat)
+      listMsg += `${num}. ${status} <a href="tg://user?id=${u.id}">${name}</a> <code>${u.id}</code>\n`;
     }
 
     listMsg += `\n━━━━━━━━━━━━━━━━\n`;
