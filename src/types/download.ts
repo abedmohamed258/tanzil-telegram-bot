@@ -18,6 +18,8 @@ export interface VideoInfo {
   thumbnail: string;
   uploader: string;
   formats: Format[];
+  // Optional: Direct download URL from Cobalt API (fallback)
+  cobaltUrl?: string;
 }
 
 export interface DownloadResult {

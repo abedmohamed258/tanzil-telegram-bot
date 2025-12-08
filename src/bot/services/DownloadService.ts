@@ -233,7 +233,7 @@ export class DownloadService {
     // Use retry logic for getting video info (2 retries, 300ms delay)
     // If this fails, we let the error propagate to show proper error message
     const info = await retryWithBackoff(
-      () => this.downloadManager.getVideoInfo(url, CookiesManager.getCookiesPath()),
+      () => this.downloadManager.getVideoInfo(url, CookiesManager.getCookiesForUrl(url)),
       2,
       300,
     );
@@ -488,7 +488,7 @@ export class DownloadService {
     try {
       // Use retry logic for getting video info
       const info = await retryWithBackoff(
-        () => this.downloadManager.getVideoInfo(state.url, CookiesManager.getCookiesPath()),
+        () => this.downloadManager.getVideoInfo(state.url, CookiesManager.getCookiesForUrl(state.url)),
         3,
         1000,
       );
@@ -786,7 +786,7 @@ export class DownloadService {
               index,
             );
             if (videoUrl) {
-              const info = await this.downloadManager.getVideoInfo(videoUrl, CookiesManager.getCookiesPath());
+              const info = await this.downloadManager.getVideoInfo(videoUrl, CookiesManager.getCookiesForUrl(videoUrl));
               const cost = calculateCost(info.duration, format === 'audio');
 
               if (await this.storage.useCredits(userId, cost)) {
@@ -824,7 +824,7 @@ export class DownloadService {
           }
         }
       } else {
-        const info = await this.downloadManager.getVideoInfo(url, CookiesManager.getCookiesPath());
+        const info = await this.downloadManager.getVideoInfo(url, CookiesManager.getCookiesForUrl(url));
         const cost = calculateCost(info.duration, format === 'audio');
 
         if (await this.storage.useCredits(userId, cost)) {

@@ -12,6 +12,7 @@ import {
 import { logger } from '../utils/logger';
 import { FileManager } from '../utils/FileManager';
 import { retryWithBackoff } from '../utils/retryHelper';
+import { cobaltDownloader } from './CobaltDownloader';
 
 // Zod Schema for URL Validation
 const UrlSchema = z
@@ -200,6 +201,64 @@ export class DownloadManager {
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
+
+      // Check if this is a login-required error and try Cobalt as fallback
+      const isLoginError = errorMessage.includes('login') ||
+        errorMessage.includes('rate-limit') ||
+        errorMessage.includes('authentication') ||
+        errorMessage.includes('cookies') ||
+        errorMessage.includes('Requested content is not available') ||
+        errorMessage.includes('private') ||
+        errorMessage.includes('Video unavailable');
+
+      // Try Cobalt fallback for any error on supported platforms
+      if (cobaltDownloader.isSupportedUrl(validUrl)) {
+        logger.info('🔄 yt-dlp failed, trying Cobalt fallback', {
+          url: validUrl,
+          isLoginError,
+          error: errorMessage.substring(0, 100)
+        });
+
+        try {
+          const cobaltResult = await cobaltDownloader.getDownloadUrl(validUrl);
+
+          if (cobaltResult) {
+            // Create minimal VideoInfo from Cobalt result
+            const result: VideoInfo = {
+              title: cobaltResult.filename.replace(/\.[^/.]+$/, '') || 'Video',
+              duration: 0, // Cobalt doesn't provide duration
+              thumbnail: '',
+              uploader: 'Unknown',
+              formats: [{
+                formatId: 'cobalt-best',
+                quality: 'Best',
+                extension: 'mp4',
+                filesize: 0,
+                hasVideo: true,
+                hasAudio: true,
+                resolutionCategory: 'Other',
+              }],
+              // Store Cobalt URL for later download
+              cobaltUrl: cobaltResult.url,
+            };
+
+            // Cache with shorter TTL since we don't have full info
+            this.infoCache.set(validUrl, {
+              data: result,
+              expires: Date.now() + 300000, // 5 minutes
+            });
+
+            logger.info('✅ Cobalt fallback succeeded', { url: validUrl });
+            return result;
+          }
+        } catch (cobaltError) {
+          logger.error('Cobalt fallback also failed', {
+            url: validUrl,
+            error: (cobaltError as Error).message
+          });
+        }
+      }
+
       logger.error('Failed to get video info', {
         url: validUrl,
         error: errorMessage,
@@ -435,6 +494,46 @@ export class DownloadManager {
       return { success: false, error: err.message };
     } finally {
       this.activeDownloads.delete(sessionId);
+    }
+  }
+
+  /**
+   * Download file directly from Cobalt URL (no yt-dlp needed)
+   * Used when Cobalt fallback provides direct download URL
+   */
+  async downloadFromCobalt(
+    cobaltUrl: string,
+    sessionId: string,
+    filename: string = 'download.mp4',
+  ): Promise<DownloadResult> {
+    try {
+      logger.info('⬇️ Downloading from Cobalt URL', { sessionId });
+
+      const sessionDir = await this.fileManager.createSessionDir(sessionId);
+      const filePath = (await import('path')).join(sessionDir, filename);
+
+      // Download file using fetch
+      const response = await fetch(cobaltUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Stream to file
+      const fs = await import('fs/promises');
+      const buffer = Buffer.from(await response.arrayBuffer());
+      await fs.writeFile(filePath, buffer);
+
+      logger.info('✅ Cobalt download successful', { filePath, sessionId });
+      return { success: true, filePath };
+    } catch (error: unknown) {
+      const err = error as Error;
+      logger.error('Cobalt download failed', { sessionId, error: err.message });
+      return { success: false, error: err.message };
     }
   }
 

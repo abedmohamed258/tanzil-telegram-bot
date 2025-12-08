@@ -83,7 +83,7 @@ export class PlaylistManager {
     try {
       // Use retry logic for getting playlist info
       const playlistInfo = await retryWithBackoff(
-        () => this.downloadManager.getPlaylistInfo(url, CookiesManager.getCookiesPath()),
+        () => this.downloadManager.getPlaylistInfo(url, CookiesManager.getCookiesForUrl(url)),
         3,
         1000,
       );
@@ -586,7 +586,7 @@ export class PlaylistManager {
       if (videoUrl) {
         // Use retry logic for getting video info
         const info = await retryWithBackoff(
-          () => this.downloadManager.getVideoInfo(videoUrl, CookiesManager.getCookiesPath()),
+          () => this.downloadManager.getVideoInfo(videoUrl, CookiesManager.getCookiesForUrl(videoUrl)),
           3,
           1000,
         );

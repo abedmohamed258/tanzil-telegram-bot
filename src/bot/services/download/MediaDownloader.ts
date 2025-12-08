@@ -294,7 +294,7 @@ export class MediaDownloader {
   ): Promise<{ success: boolean; filePath: string; error?: string }> {
     const result = await retryWithBackoff(
       async () => {
-        const cookies = CookiesManager.getCookiesPath();
+        const cookies = CookiesManager.getCookiesForUrl(url);
         const downloadResult = isAudio
           ? await this.downloadManager.downloadAudio(
             url,
