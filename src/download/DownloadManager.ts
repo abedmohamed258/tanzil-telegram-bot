@@ -202,21 +202,28 @@ export class DownloadManager {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
 
-      // Check if this is a login-required error and try Cobalt as fallback
-      const isLoginError = errorMessage.includes('login') ||
+      // Check if this is a bot detection/login-required error
+      const isBotDetectionError = errorMessage.includes('Sign in') ||
+        errorMessage.includes('sign in') ||
+        errorMessage.includes('bot') ||
+        errorMessage.includes('login') ||
         errorMessage.includes('rate-limit') ||
         errorMessage.includes('authentication') ||
         errorMessage.includes('cookies') ||
         errorMessage.includes('Requested content is not available') ||
         errorMessage.includes('private') ||
-        errorMessage.includes('Video unavailable');
+        errorMessage.includes('Video unavailable') ||
+        errorMessage.includes('403') ||
+        errorMessage.includes('confirm your age') ||
+        errorMessage.includes('not available');
 
-      // Try Cobalt fallback for any error on supported platforms
+      // ALWAYS try Cobalt fallback for any yt-dlp error on supported platforms
+      // This is the key to solving bot detection issues
       if (cobaltDownloader.isSupportedUrl(validUrl)) {
-        logger.info('🔄 yt-dlp failed, trying Cobalt fallback', {
+        logger.info('🔄 yt-dlp failed, trying Cobalt/API fallback', {
           url: validUrl,
-          isLoginError,
-          error: errorMessage.substring(0, 100)
+          isBotDetectionError,
+          error: errorMessage.substring(0, 150)
         });
 
         try {
@@ -248,22 +255,29 @@ export class DownloadManager {
               expires: Date.now() + 300000, // 5 minutes
             });
 
-            logger.info('✅ Cobalt fallback succeeded', { url: validUrl });
+            logger.info('✅ Cobalt/API fallback succeeded', { url: validUrl });
             return result;
           }
         } catch (cobaltError) {
-          logger.error('Cobalt fallback also failed', {
+          logger.error('All fallback APIs failed', {
             url: validUrl,
-            error: (cobaltError as Error).message
+            ytdlpError: errorMessage.substring(0, 100),
+            cobaltError: (cobaltError as Error).message
           });
         }
       }
 
-      logger.error('Failed to get video info', {
+      // Provide more user-friendly error message
+      let userFriendlyError = errorMessage;
+      if (isBotDetectionError) {
+        userFriendlyError = 'المنصة تتطلب تسجيل دخول أو حجبت الطلب. جاري المحاولة عبر بدائل أخرى...';
+      }
+
+      logger.error('Failed to get video info after all attempts', {
         url: validUrl,
         error: errorMessage,
       });
-      throw new Error(`فشل الحصول على معلومات الفيديو: ${errorMessage}`);
+      throw new Error(`فشل الحصول على معلومات الفيديو: ${userFriendlyError}`);
     }
   }
 

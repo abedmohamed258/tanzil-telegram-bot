@@ -46,13 +46,20 @@ export class CobaltDownloader {
             audioOnly?: boolean;
         } = {}
     ): Promise<{ url: string; filename: string } | null> {
-        // Try platform-specific services first, then Cobalt as universal fallback
-        const services = [
-            () => this.trySnapinsta(url),      // Instagram only
-            () => this.tryIndown(url),         // Instagram only
-            () => this.tryFBDown(url),         // Facebook only
-            () => this.trySaveFrom(url),       // Universal
-            () => this.tryCobaltInstance(url, options.quality || '1080', options.audioOnly || false), // Universal
+        // Determine which services to try based on URL
+        const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+
+        // YouTube-first approach: try YouTube-specific APIs first
+        const services = isYouTube ? [
+            () => this.tryYouTubeAPI(url),              // YouTube specific
+            () => this.tryCobaltInstance(url, options.quality || '1080', options.audioOnly || false),
+            () => this.trySaveFrom(url),                 // Universal
+        ] : [
+            () => this.trySnapinsta(url),                // Instagram only
+            () => this.tryIndown(url),                   // Instagram only
+            () => this.tryFBDown(url),                   // Facebook only
+            () => this.trySaveFrom(url),                 // Universal
+            () => this.tryCobaltInstance(url, options.quality || '1080', options.audioOnly || false),
         ];
 
         for (let i = 0; i < services.length; i++) {
@@ -72,6 +79,96 @@ export class CobaltDownloader {
         }
 
         logger.error('All download services failed');
+        return null;
+    }
+
+    /**
+     * Try YouTube-specific API (y2mate style)
+     */
+    private async tryYouTubeAPI(url: string): Promise<{ url: string; filename: string } | null> {
+        if (!url.includes('youtube.com') && !url.includes('youtu.be')) return null;
+
+        logger.info('🔗 Trying YouTube API', { url });
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000);
+
+        try {
+            // First, try ssyoutube.com API
+            const response = await fetch('https://api.ssyoutube.com/api/convert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Origin': 'https://ssyoutube.com',
+                    'Referer': 'https://ssyoutube.com/',
+                },
+                body: JSON.stringify({ url, format: 'mp4' }),
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json() as { url?: string; link?: string; title?: string };
+
+            if (data.url || data.link) {
+                logger.info('✅ YouTube API succeeded');
+                return {
+                    url: data.url || data.link || '',
+                    filename: (data.title || 'youtube_video') + '.mp4',
+                };
+            }
+
+            throw new Error('No URL in response');
+        } catch (error) {
+            // Try alternative: loader.to style API
+            try {
+                const id = this.extractYouTubeId(url);
+                if (!id) throw new Error('Could not extract YouTube ID');
+
+                const altResponse = await fetch(`https://loader.to/ajax/download.php?format=1080&url=${encodeURIComponent(url)}`, {
+                    method: 'GET',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    },
+                    signal: controller.signal,
+                });
+
+                if (altResponse.ok) {
+                    const altData = await altResponse.json() as { success?: boolean; download_url?: string; title?: string };
+                    if (altData.success && altData.download_url) {
+                        logger.info('✅ YouTube API (alt) succeeded');
+                        return {
+                            url: altData.download_url,
+                            filename: (altData.title || 'youtube_video') + '.mp4',
+                        };
+                    }
+                }
+            } catch {
+                // Ignore alternative API error
+            }
+
+            throw error;
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    /**
+     * Extract YouTube video ID from URL
+     */
+    private extractYouTubeId(url: string): string | null {
+        const patterns = [
+            /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+        ];
+
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) return match[1];
+        }
         return null;
     }
 
