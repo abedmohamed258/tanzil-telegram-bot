@@ -276,7 +276,7 @@ export class SystemAdmin {
     const endIndex = Math.min(startIndex + PAGE_SIZE, users.length);
     const pageUsers = users.slice(startIndex, endIndex);
 
-    let listMsg = `👥 *دليل المستخدمين*\n`;
+    let listMsg = `👥 <b>دليل المستخدمين</b>\n`;
     listMsg += `📊 (${users.length} مستخدم | ${blockedCount} محظور)\n`;
     listMsg += `━━━━━━━━━━━━━━━━\n\n`;
 
@@ -284,9 +284,9 @@ export class SystemAdmin {
       const u = pageUsers[i];
       const isBlocked = await this.blockService.isBlocked(u.id);
       const status = isBlocked ? '🔴' : '🟢';
-      const name = this.escapeMarkdown(u.firstName);
+      const name = this.escapeHtml(u.firstName);
       const num = startIndex + i + 1;
-      listMsg += `${num}. ${status} [${name}](tg://user?id=${u.id})\n`;
+      listMsg += `${num}. ${status} <a href="tg://user?id=${u.id}">${name}</a>\n`;
     }
 
     listMsg += `\n━━━━━━━━━━━━━━━━\n`;
@@ -295,18 +295,15 @@ export class SystemAdmin {
 
     const keyboard: any[][] = [];
 
-    // أزرار المستخدمين (أول 5 في الصفحة)
-    const userButtons = pageUsers.slice(0, 5).map((u, i) => ({
-      text: `${startIndex + i + 1}. ${u.firstName.substring(0, 12)}`,
+    // أزرار المستخدمين - جميع المستخدمين في الصفحة (15 بحد أقصى)
+    const userButtons = pageUsers.map((u, i) => ({
+      text: `${startIndex + i + 1}. ${u.firstName.substring(0, 10)}`,
       callback_data: `admin:profile:${u.id}`,
     }));
 
-    // تقسيم الأزرار لصفين
-    if (userButtons.length > 0) {
-      keyboard.push(userButtons.slice(0, 3));
-      if (userButtons.length > 3) {
-        keyboard.push(userButtons.slice(3));
-      }
+    // تقسيم الأزرار لصفوف (3 أزرار في كل صف)
+    for (let i = 0; i < userButtons.length; i += 3) {
+      keyboard.push(userButtons.slice(i, i + 3));
     }
 
     // أزرار التنقل
@@ -324,7 +321,7 @@ export class SystemAdmin {
     keyboard.push([{ text: '🔙 رجوع', callback_data: 'admin:back' }]);
 
     await this.editMessage(chatId, messageId, listMsg, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: { inline_keyboard: keyboard },
     });
   }
@@ -604,5 +601,12 @@ export class SystemAdmin {
 
   private escapeMarkdown(text: string): string {
     return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
+  }
+
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 }

@@ -11,6 +11,8 @@ export class Server {
   private bot: Telegraf;
   private port: number;
   private webhookUrl: string;
+  private keepAliveInterval: NodeJS.Timeout | null = null;
+  private readonly KEEP_ALIVE_INTERVAL = 14 * 60 * 1000; // 14 minutes
 
   constructor(bot: Telegraf, port: number, webhookUrl: string) {
     this.app = express();
@@ -61,6 +63,39 @@ export class Server {
   }
 
   /**
+   * Start keep-alive mechanism to prevent Render free tier from sleeping
+   * Pings /health endpoint every 14 minutes
+   */
+  private startKeepAlive(): void {
+    this.keepAliveInterval = setInterval(async () => {
+      try {
+        const healthUrl = this.webhookUrl.replace(/\/webhook$/, '') + '/health';
+        const response = await fetch(healthUrl);
+        if (response.ok) {
+          logger.debug('🏓 Keep-alive ping successful');
+        } else {
+          logger.warn('Keep-alive ping returned non-OK status', { status: response.status });
+        }
+      } catch (error: unknown) {
+        logger.warn('Keep-alive ping failed', { error: (error as Error).message });
+      }
+    }, this.KEEP_ALIVE_INTERVAL);
+
+    logger.info('🔔 Keep-alive started (every 14 minutes)');
+  }
+
+  /**
+   * Stop keep-alive mechanism
+   */
+  private stopKeepAlive(): void {
+    if (this.keepAliveInterval) {
+      clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
+      logger.info('🔕 Keep-alive stopped');
+    }
+  }
+
+  /**
    * Start the server and set webhook
    */
   async start(): Promise<void> {
@@ -75,6 +110,9 @@ export class Server {
             : `${this.webhookUrl}/webhook`;
           await this.bot.telegram.setWebhook(webhookPath);
           logger.info(`✅ Webhook set to: ${webhookPath}`);
+
+          // Start keep-alive mechanism
+          this.startKeepAlive();
         } catch (error: unknown) {
           logger.error('Failed to set webhook', {
             error: (error as Error).message,
@@ -91,6 +129,7 @@ export class Server {
    */
   async stop(): Promise<void> {
     logger.info('🛑 Server shutting down...');
+    this.stopKeepAlive();
     // Cleanup can be added here if needed
   }
 }

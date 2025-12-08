@@ -13,7 +13,7 @@ import {
 } from '../../types/index';
 import { logger, logError, logToTopic } from '../../utils/logger';
 import { StoryService } from './StoryService';
-import { retryWithBackoff, withFallback } from '../../utils/retryHelper';
+import { retryWithBackoff } from '../../utils/retryHelper';
 import { MarkdownSanitizer } from '../../utils/MarkdownSanitizer';
 import { calculateCost } from '../../utils/logicHelpers';
 import { CookiesManager } from '../../utils/CookiesManager';
@@ -230,28 +230,28 @@ export class DownloadService {
       { parse_mode: 'Markdown' },
     );
 
-    // Use retry logic with fallback for getting video info (2 retries, 300ms delay)
-    const info = await withFallback(
-      () =>
-        retryWithBackoff(() => this.downloadManager.getVideoInfo(url, CookiesManager.getCookiesPath()), 2, 300),
-      async () => {
-        logger.warn(
-          'Failed to get video info after retries, using basic fallback',
-          { url },
-        );
-        // Fallback: return minimal info to allow user to proceed
-        return {
-          title: 'Unknown Video',
-          duration: 0,
-          uploader: 'Unknown',
-          formats: [],
-          thumbnail: '',
-        };
-      },
+    // Use retry logic for getting video info (2 retries, 300ms delay)
+    // If this fails, we let the error propagate to show proper error message
+    const info = await retryWithBackoff(
+      () => this.downloadManager.getVideoInfo(url, CookiesManager.getCookiesPath()),
+      2,
+      300,
     );
 
     if (this.isVideoDurationExceeded(info.duration)) {
       await this.showDurationExceededMessage(chatId, messageId, info.duration);
+      return;
+    }
+
+    // Check if video has any formats
+    if (!info.formats || info.formats.length === 0) {
+      await this.bot.telegram.editMessageText(
+        chatId,
+        messageId,
+        undefined,
+        `❌ *تعذر جلب جودات الفيديو*\n━━━━━━━━━━━━━━━\n📋 السبب: الفيديو قد يكون:\n• خاص أو محذوف\n• محمي بحقوق النشر\n• من موقع غير مدعوم\n\n💡 حاول مرة أخرى أو جرب رابط آخر.`,
+        { parse_mode: 'Markdown' },
+      );
       return;
     }
 
@@ -737,7 +737,18 @@ export class DownloadService {
       for (const task of tasks) {
         const executeTime = new Date(task.executeAt);
         if (executeTime <= now) {
-          await this.executeScheduledTask(task);
+          // CRITICAL: Remove task BEFORE executing to prevent duplicate runs
+          // The scheduler runs every 10 seconds, so if we don't remove first,
+          // the same task will be picked up multiple times during execution
+          await this.storage.removeScheduledTask(task.id);
+
+          // Now execute (fire and forget - errors handled inside)
+          this.executeScheduledTask(task).catch(error => {
+            logger.error('Scheduled task execution failed', {
+              taskId: task.id,
+              error: (error as Error).message
+            });
+          });
         }
       }
     } catch (error) {
@@ -840,7 +851,8 @@ export class DownloadService {
         }
       }
 
-      await this.storage.removeScheduledTask(task.id);
+      // Task already removed before execution, so just log success
+      logger.info('Scheduled task completed', { taskId: task.id });
     } catch (e) {
       await this.sendToChat(
         chatId,
@@ -848,7 +860,7 @@ export class DownloadService {
         `❌ فشل تنفيذ التحميل المجدول: ${(e as Error).message}`,
       );
       logger.error('Scheduled Task Failed', { taskId: task.id, error: e });
-      await this.storage.removeScheduledTask(task.id);
+      // Task already removed, no need to remove again
     }
   }
 }
