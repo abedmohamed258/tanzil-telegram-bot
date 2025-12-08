@@ -231,13 +231,8 @@ export class DownloadService {
     // Note: Status message is sent ONCE in processUrl before calling this function
     // to prevent duplicate messages during retries
 
-    // Use retry logic for getting video info (2 retries, 300ms delay)
-    // If this fails, we let the error propagate to show proper error message
-    const info = await retryWithBackoff(
-      () => this.downloadManager.getVideoInfo(url, CookiesManager.getCookiesForUrl(url)),
-      2,
-      300,
-    );
+    // Get video info (retries are handled inside DownloadManager.getVideoInfo)
+    const info = await this.downloadManager.getVideoInfo(url, CookiesManager.getCookiesForUrl(url));
 
     if (this.isVideoDurationExceeded(info.duration)) {
       await this.showDurationExceededMessage(chatId, messageId, info.duration);

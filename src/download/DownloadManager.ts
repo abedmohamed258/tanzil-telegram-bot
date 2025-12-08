@@ -115,10 +115,10 @@ export class DownloadManager {
     }
 
     try {
-      // Use retry logic for network operations (2 attempts, 500ms delay)
+      // Use retry logic for network operations (1 retry, 200ms delay)
       const output = await retryWithBackoff(
         () => this.executeYtDlp(args),
-        2,
+        1,
         200,
         'getVideoInfo',
       );

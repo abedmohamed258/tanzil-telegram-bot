@@ -46,11 +46,13 @@ export class CobaltDownloader {
             audioOnly?: boolean;
         } = {}
     ): Promise<{ url: string; filename: string } | null> {
+        // Try platform-specific services first, then Cobalt as universal fallback
         const services = [
-            () => this.trySnapinsta(url),
-            () => this.tryIndown(url),
-            () => this.trySaveFrom(url),
-            () => this.tryCobaltInstance(url, options.quality || '1080', options.audioOnly || false),
+            () => this.trySnapinsta(url),      // Instagram only
+            () => this.tryIndown(url),         // Instagram only
+            () => this.tryFBDown(url),         // Facebook only
+            () => this.trySaveFrom(url),       // Universal
+            () => this.tryCobaltInstance(url, options.quality || '1080', options.audioOnly || false), // Universal
         ];
 
         for (let i = 0; i < services.length; i++) {
@@ -165,6 +167,52 @@ export class CobaltDownloader {
     }
 
     /**
+     * Try FBDown API for Facebook videos
+     */
+    private async tryFBDown(url: string): Promise<{ url: string; filename: string } | null> {
+        if (!url.includes('facebook.com') && !url.includes('fb.watch')) return null;
+
+        logger.info('🔗 Trying FBDown', { url });
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+
+        try {
+            // Use a similar approach to other services
+            const response = await fetch('https://www.getfvid.com/api/convert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Origin': 'https://www.getfvid.com',
+                    'Referer': 'https://www.getfvid.com/',
+                },
+                body: new URLSearchParams({ url }).toString(),
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json() as { url?: string; hd?: string; sd?: string };
+
+            const downloadUrl = data.hd || data.sd || data.url;
+            if (downloadUrl) {
+                logger.info('✅ FBDown succeeded');
+                return {
+                    url: downloadUrl,
+                    filename: 'facebook_video.mp4',
+                };
+            }
+
+            throw new Error('No URL in response');
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    /**
      * Try savefrom.net style API
      */
     private async trySaveFrom(url: string): Promise<{ url: string; filename: string } | null> {
@@ -211,8 +259,9 @@ export class CobaltDownloader {
         audioOnly: boolean
     ): Promise<{ url: string; filename: string } | null> {
         const COBALT_INSTANCES = [
-            'https://api.cobalt.tools',
-            'https://cobalt.canine.tools',
+            'https://api.cobalt.tools/api/json',
+            'https://cobalt.canine.tools/api/json',
+            'https://co.wuk.sh/api/json',
         ];
 
         for (const instanceUrl of COBALT_INSTANCES) {
@@ -227,6 +276,7 @@ export class CobaltDownloader {
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                     },
                     body: JSON.stringify({
                         url: videoUrl,
