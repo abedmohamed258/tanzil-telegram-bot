@@ -12,6 +12,24 @@ interface CobaltResponse {
 }
 
 /**
+ * Generic API Response types
+ */
+interface SnapinstaResponse {
+    url?: string;
+}
+
+interface IndownResponse {
+    video_url?: string;
+    download_url?: string;
+}
+
+interface SaveFromResponse {
+    url?: string;
+    download?: string;
+    video?: string;
+}
+
+/**
  * CobaltDownloader - Uses multiple fallback APIs for Instagram/TikTok
  * When yt-dlp fails, tries multiple third-party services
  */
@@ -67,7 +85,6 @@ export class CobaltDownloader {
         const timeout = setTimeout(() => controller.abort(), 20000);
 
         try {
-            // First request to get token
             const formData = new URLSearchParams();
             formData.append('url', url);
 
@@ -87,7 +104,7 @@ export class CobaltDownloader {
                 throw new Error(`HTTP ${response.status}`);
             }
 
-            const data = await response.json();
+            const data = await response.json() as SnapinstaResponse;
 
             if (data.url) {
                 logger.info('✅ Snapinsta succeeded');
@@ -131,13 +148,12 @@ export class CobaltDownloader {
                 throw new Error(`HTTP ${response.status}`);
             }
 
-            const data = await response.json();
+            const data = await response.json() as IndownResponse;
 
-            // indown returns different formats
             if (data.video_url || data.download_url) {
                 logger.info('✅ Indown succeeded');
                 return {
-                    url: data.video_url || data.download_url,
+                    url: data.video_url || data.download_url || '',
                     filename: 'instagram_video.mp4',
                 };
             }
@@ -158,7 +174,6 @@ export class CobaltDownloader {
         const timeout = setTimeout(() => controller.abort(), 20000);
 
         try {
-            // Use a simple API endpoint
             const response = await fetch(`https://api.savefrom.biz/api/convert?url=${encodeURIComponent(url)}`, {
                 method: 'GET',
                 headers: {
@@ -171,12 +186,12 @@ export class CobaltDownloader {
                 throw new Error(`HTTP ${response.status}`);
             }
 
-            const data = await response.json();
+            const data = await response.json() as SaveFromResponse;
 
             if (data.url || data.download || data.video) {
                 logger.info('✅ SaveFrom succeeded');
                 return {
-                    url: data.url || data.download || data.video,
+                    url: data.url || data.download || data.video || '',
                     filename: 'video.mp4',
                 };
             }
