@@ -173,7 +173,14 @@ export class DownloadService {
       return;
     }
 
-    // Standard Video
+    // Standard Video - update status ONCE before processing
+    await this.bot.telegram.editMessageText(
+      chatId,
+      messageId,
+      undefined,
+      '🔄 *جاري استرجاع البيانات...*',
+      { parse_mode: 'Markdown' },
+    );
     await this.handleStandardVideo(chatId, userId, url, messageId);
   }
 
@@ -221,14 +228,8 @@ export class DownloadService {
     url: string,
     messageId: number,
   ): Promise<void> {
-    // Send immediate status update to user
-    await this.bot.telegram.editMessageText(
-      chatId,
-      messageId,
-      undefined,
-      '🔄 *جاري استرجاع البيانات...*',
-      { parse_mode: 'Markdown' },
-    );
+    // Note: Status message is sent ONCE in processUrl before calling this function
+    // to prevent duplicate messages during retries
 
     // Use retry logic for getting video info (2 retries, 300ms delay)
     // If this fails, we let the error propagate to show proper error message
