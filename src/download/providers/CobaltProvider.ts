@@ -98,30 +98,51 @@ export class CobaltProvider extends BaseProvider {
         const filename = result.filename.replace(/\.[^/.]+$/, '') || 'Video';
 
         // Create multiple quality options for user selection
+        // Estimated file sizes based on typical video bitrates (per minute)
+        // 4K: ~50MB/min, 1440p: ~25MB/min, 1080p: ~12MB/min, 720p: ~6MB/min, 
+        // 480p: ~3MB/min, 360p: ~1.5MB/min, 240p: ~0.8MB/min, 144p: ~0.4MB/min
         const formats: VideoFormat[] = [
             {
-                formatId: 'cobalt-1080',
-                quality: '1080p',
+                formatId: 'cobalt-2160',
+                quality: '4K (2160p)',
                 extension: 'mp4',
-                filesize: 0,
+                filesize: 150 * 1024 * 1024, // ~150MB estimated
+                hasVideo: true,
+                hasAudio: true,
+                resolutionCategory: '4K',
+            },
+            {
+                formatId: 'cobalt-1440',
+                quality: '1440p (2K)',
+                extension: 'mp4',
+                filesize: 75 * 1024 * 1024, // ~75MB estimated
+                hasVideo: true,
+                hasAudio: true,
+                resolutionCategory: '4K',
+            },
+            {
+                formatId: 'cobalt-1080',
+                quality: '1080p (Full HD)',
+                extension: 'mp4',
+                filesize: 36 * 1024 * 1024, // ~36MB estimated
                 hasVideo: true,
                 hasAudio: true,
                 resolutionCategory: '1080p',
             },
             {
                 formatId: 'cobalt-720',
-                quality: '720p',
+                quality: '720p (HD)',
                 extension: 'mp4',
-                filesize: 0,
+                filesize: 18 * 1024 * 1024, // ~18MB estimated
                 hasVideo: true,
                 hasAudio: true,
                 resolutionCategory: '720p',
             },
             {
                 formatId: 'cobalt-480',
-                quality: '480p',
+                quality: '480p (SD)',
                 extension: 'mp4',
-                filesize: 0,
+                filesize: 9 * 1024 * 1024, // ~9MB estimated
                 hasVideo: true,
                 hasAudio: true,
                 resolutionCategory: '480p',
@@ -130,16 +151,34 @@ export class CobaltProvider extends BaseProvider {
                 formatId: 'cobalt-360',
                 quality: '360p',
                 extension: 'mp4',
-                filesize: 0,
+                filesize: 5 * 1024 * 1024, // ~5MB estimated
                 hasVideo: true,
                 hasAudio: true,
                 resolutionCategory: '360p',
             },
             {
+                formatId: 'cobalt-240',
+                quality: '240p',
+                extension: 'mp4',
+                filesize: 3 * 1024 * 1024, // ~3MB estimated
+                hasVideo: true,
+                hasAudio: true,
+                resolutionCategory: 'other',
+            },
+            {
+                formatId: 'cobalt-144',
+                quality: '144p',
+                extension: 'mp4',
+                filesize: 1.5 * 1024 * 1024, // ~1.5MB estimated
+                hasVideo: true,
+                hasAudio: true,
+                resolutionCategory: 'other',
+            },
+            {
                 formatId: 'cobalt-audio',
-                quality: 'Audio (MP3)',
+                quality: '🎵 Audio (MP3)',
                 extension: 'mp3',
-                filesize: 0,
+                filesize: 3 * 1024 * 1024, // ~3MB estimated
                 hasVideo: false,
                 hasAudio: true,
                 bitrate: 128,
@@ -240,14 +279,17 @@ export class CobaltProvider extends BaseProvider {
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     },
                     body: JSON.stringify({
                         url: videoUrl,
-                        videoQuality: quality,
+                        videoQuality: quality, // max / 4320 / 2160 / 1440 / 1080 / 720 / 480 / 360 / 240 / 144
                         downloadMode: audioOnly ? 'audio' : 'auto',
                         audioFormat: 'mp3',
+                        audioBitrate: '128',
                         filenameStyle: 'basic',
+                        youtubeVideoCodec: 'h264', // Better compatibility
+                        alwaysProxy: true, // Always use tunnel for better reliability
                     }),
                     signal: controller.signal,
                 });
