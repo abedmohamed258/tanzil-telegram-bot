@@ -84,7 +84,7 @@ export class CobaltProvider extends BaseProvider {
     }
 
     /**
-     * Get video information (minimal - Cobalt doesn't provide full info)
+     * Get video information with multiple quality options
      */
     async getVideoInfo(url: string, options?: DownloadOptions): Promise<VideoInfo> {
         // Try to get direct download URL and use that as info
@@ -97,15 +97,55 @@ export class CobaltProvider extends BaseProvider {
         const platform = this.getPlatform(url);
         const filename = result.filename.replace(/\.[^/.]+$/, '') || 'Video';
 
-        const format: VideoFormat = {
-            formatId: 'cobalt-best',
-            quality: 'Best',
-            extension: 'mp4',
-            filesize: 0,
-            hasVideo: !options?.audioOnly,
-            hasAudio: true,
-            resolutionCategory: 'other',
-        };
+        // Create multiple quality options for user selection
+        const formats: VideoFormat[] = [
+            {
+                formatId: 'cobalt-1080',
+                quality: '1080p',
+                extension: 'mp4',
+                filesize: 0,
+                hasVideo: true,
+                hasAudio: true,
+                resolutionCategory: '1080p',
+            },
+            {
+                formatId: 'cobalt-720',
+                quality: '720p',
+                extension: 'mp4',
+                filesize: 0,
+                hasVideo: true,
+                hasAudio: true,
+                resolutionCategory: '720p',
+            },
+            {
+                formatId: 'cobalt-480',
+                quality: '480p',
+                extension: 'mp4',
+                filesize: 0,
+                hasVideo: true,
+                hasAudio: true,
+                resolutionCategory: '480p',
+            },
+            {
+                formatId: 'cobalt-360',
+                quality: '360p',
+                extension: 'mp4',
+                filesize: 0,
+                hasVideo: true,
+                hasAudio: true,
+                resolutionCategory: '360p',
+            },
+            {
+                formatId: 'cobalt-audio',
+                quality: 'Audio (MP3)',
+                extension: 'mp3',
+                filesize: 0,
+                hasVideo: false,
+                hasAudio: true,
+                bitrate: 128,
+                resolutionCategory: 'other',
+            },
+        ];
 
         return {
             title: filename,
@@ -113,7 +153,7 @@ export class CobaltProvider extends BaseProvider {
             thumbnail: '',
             uploader: 'Unknown',
             platform,
-            formats: [format],
+            formats,
             directUrl: result.url,
             provider: this.name,
         };
@@ -129,11 +169,23 @@ export class CobaltProvider extends BaseProvider {
         onProgress?: (progress: DownloadProgress) => void,
     ): Promise<DownloadResult> {
         return this.executeWithTracking(async () => {
+            // Parse quality from formatId (e.g., cobalt-1080 -> 1080)
+            let quality = '1080';
+            let audioOnly = options.audioOnly || false;
+
+            if (options.formatId) {
+                if (options.formatId === 'cobalt-audio') {
+                    audioOnly = true;
+                } else if (options.formatId.startsWith('cobalt-')) {
+                    quality = options.formatId.replace('cobalt-', '');
+                }
+            }
+
             // Get download URL from Cobalt
             const result = await this.getCobaltUrl(
                 url,
-                options.quality || '1080',
-                options.audioOnly || false,
+                quality,
+                audioOnly,
             );
 
             if (!result) {
