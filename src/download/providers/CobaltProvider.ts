@@ -308,79 +308,94 @@ export class CobaltProvider extends BaseProvider {
 
             const controller = this.createAbortController(sessionId);
 
-            const response = await fetch(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                },
-                signal: controller.signal,
-            });
+            // Set download timeout
+            const downloadTimeout = setTimeout(() => controller.abort(), 120000); // 2 minutes
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            try {
+                // Use proper headers for Cobalt tunnel/stream URLs
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': '*/*',
+                        'Accept-Encoding': 'identity', // Avoid compression issues
+                        'Connection': 'keep-alive',
+                    },
+                    signal: controller.signal,
+                    redirect: 'follow', // Explicitly follow redirects
+                });
 
-            const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
-            const reader = response.body?.getReader();
+                clearTimeout(downloadTimeout);
 
-            if (!reader) {
-                throw new Error('No response body');
-            }
-
-            const chunks: Uint8Array[] = [];
-            let downloadedBytes = 0;
-
-            while (true) {
-                const { done, value } = await reader.read();
-
-                if (done) break;
-
-                chunks.push(value);
-                downloadedBytes += value.length;
-
-                if (onProgress && contentLength > 0) {
-                    onProgress({
-                        sessionId,
-                        state: DownloadState.DOWNLOADING,
-                        percentage: (downloadedBytes / contentLength) * 100,
-                        downloadedBytes,
-                        totalBytes: contentLength,
-                        speed: 0,
-                        eta: 0,
-                    });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
+
+                const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
+                const reader = response.body?.getReader();
+
+                if (!reader) {
+                    throw new Error('No response body');
+                }
+
+                const chunks: Uint8Array[] = [];
+                let downloadedBytes = 0;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) break;
+
+                    chunks.push(value);
+                    downloadedBytes += value.length;
+
+                    if (onProgress && contentLength > 0) {
+                        onProgress({
+                            sessionId,
+                            state: DownloadState.DOWNLOADING,
+                            percentage: (downloadedBytes / contentLength) * 100,
+                            downloadedBytes,
+                            totalBytes: contentLength,
+                            speed: 0,
+                            eta: 0,
+                        });
+                    }
+                }
+
+                // Write to file
+                const fs = await import('fs/promises');
+                const buffer = Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)));
+
+                // Validate file is not empty
+                if (buffer.length === 0) {
+                    throw new Error('Downloaded file is empty');
+                }
+
+                await fs.writeFile(filePath, buffer);
+
+                this.cleanupAbortController(sessionId);
+
+                logger.info(`[${this.name}] Download successful`, { filePath, sessionId, size: buffer.length });
+
+                return {
+                    success: true,
+                    filePath,
+                    filename,
+                    filesize: buffer.length,
+                    provider: this.name,
+                };
+            } finally {
+                clearTimeout(downloadTimeout);
             }
-
-            // Write to file
-            const fs = await import('fs/promises');
-            const buffer = Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)));
-
-            // Validate file is not empty
-            if (buffer.length === 0) {
-                throw new Error('Downloaded file is empty');
-            }
-
-            await fs.writeFile(filePath, buffer);
-
-            this.cleanupAbortController(sessionId);
-
-            logger.info(`[${this.name}] Download successful`, { filePath, sessionId, size: buffer.length });
-
-            return {
-                success: true,
-                filePath,
-                filename,
-                filesize: buffer.length,
-                provider: this.name,
-            };
         } catch (error) {
             this.cleanupAbortController(sessionId);
             const err = error as Error;
 
             if (err.name === 'AbortError') {
-                return { success: false, error: 'Download cancelled', provider: this.name };
+                return { success: false, error: 'Download cancelled or timed out', provider: this.name };
             }
 
-            logger.error(`[${this.name}] Download failed`, {
+            logger.error(`[${this.name}] Download setup failed`, {
                 sessionId,
                 error: err.message,
             });
