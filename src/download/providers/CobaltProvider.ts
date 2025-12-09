@@ -19,7 +19,7 @@ import {
 
 // Cobalt API response types
 interface CobaltResponse {
-    status: 'tunnel' | 'redirect' | 'picker' | 'error';
+    status: 'tunnel' | 'redirect' | 'picker' | 'stream' | 'error';
     url?: string;
     filename?: string;
     picker?: Array<{ url: string; filename?: string }>;
@@ -262,15 +262,15 @@ export class CobaltProvider extends BaseProvider {
                     throw new Error(data.error?.code || 'Cobalt error');
                 }
 
-                if (data.status === 'tunnel' || data.status === 'redirect') {
+                if ((data.status === 'tunnel' || data.status === 'redirect' || data.status === 'stream') && data.url) {
                     this.recordInstanceSuccess(instanceUrl);
                     return {
-                        url: data.url || '',
+                        url: data.url,
                         filename: data.filename || 'download.mp4',
                     };
                 }
 
-                if (data.status === 'picker' && data.picker?.length) {
+                if (data.status === 'picker' && data.picker?.length && data.picker[0].url) {
                     this.recordInstanceSuccess(instanceUrl);
                     return {
                         url: data.picker[0].url,
@@ -353,11 +353,17 @@ export class CobaltProvider extends BaseProvider {
             // Write to file
             const fs = await import('fs/promises');
             const buffer = Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)));
+
+            // Validate file is not empty
+            if (buffer.length === 0) {
+                throw new Error('Downloaded file is empty');
+            }
+
             await fs.writeFile(filePath, buffer);
 
             this.cleanupAbortController(sessionId);
 
-            logger.info(`[${this.name}] Download successful`, { filePath, sessionId });
+            logger.info(`[${this.name}] Download successful`, { filePath, sessionId, size: buffer.length });
 
             return {
                 success: true,
