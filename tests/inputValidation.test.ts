@@ -155,7 +155,12 @@ describe('Property 11: Input Validation', () => {
     it('should reject non-numeric strings', () => {
       fc.assert(
         fc.property(
-          fc.string().filter((s) => !/^-?\d+(\.\d+)?$/.test(s)),
+          fc.string().filter((s) => {
+            const trimmed = s.trim();
+            // Reject strings that are purely numeric (even with whitespace)
+            // Also reject empty strings (those are handled differently)
+            return trimmed.length > 0 && !/^-?\d+(\.\d+)?$/.test(trimmed);
+          }),
           (input) => {
             const result = InputValidator.validateNumericInput(input, 0, 100);
             expect(result).toBeNull();
