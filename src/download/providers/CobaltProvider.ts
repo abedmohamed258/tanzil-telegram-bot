@@ -29,10 +29,10 @@ interface CobaltResponse {
 // Cobalt instances to rotate through (verified from instances.cobalt.best)
 // v11 API format - POST to root endpoint
 const COBALT_INSTANCES = [
-    'https://cobalt-api.kwiatekmiki.com',     // YouTube support, score 84
-    'https://capi.3kh0.net',                   // YouTube support, score 76
-    'https://cobalt-api.meowing.de',           // YouTube support, score 88
-    'https://cobalt-backend.canine.tools',     // Good for non-YouTube, score 80
+    'https://cobalt.meowing.de',           // Reliable, high score
+    'https://cobalt.q11.de',               // Good alternative
+    'https://api.cobalt.tools',            // Official API
+    'https://cobalt.noteshub.cc',          // Backup
 ];
 
 export class CobaltProvider extends BaseProvider {

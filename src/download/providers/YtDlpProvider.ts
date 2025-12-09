@@ -139,6 +139,12 @@ export class YtDlpProvider extends BaseProvider {
             }
 
             const output = await this.executeYtDlp(args, undefined, 30000);
+
+            // Check for potential error in output if it wasn't thrown
+            if (this.isBotDetectionError(output)) {
+                throw new Error('Sign in to confirm you’re not a bot');
+            }
+
             const data: YtDlpVideoInfo = JSON.parse(output);
 
             const formats = this.parseFormats(data.formats || [], data.duration);
@@ -165,6 +171,15 @@ export class YtDlpProvider extends BaseProvider {
 
             return result;
         }, 'getVideoInfo');
+    }
+
+    /**
+     * Check if error is bot detection
+     */
+    private isBotDetectionError(error: string): boolean {
+        return error.includes('Sign in to confirm you’re not a bot') ||
+            error.includes('cookies-from-browser') ||
+            error.includes('HTTP Error 429');
     }
 
     /**
@@ -238,6 +253,13 @@ export class YtDlpProvider extends BaseProvider {
                     error: err.message,
                     sessionId,
                 });
+
+                // Fail fast on bot detection
+                if (this.isBotDetectionError(err.message)) {
+                    logger.warn(`[${this.name}] Bot detection triggered, stopping retries`, { sessionId });
+                    lastError = err;
+                    break;
+                }
 
                 if (attempt < this.maxRetries) {
                     await new Promise((r) => setTimeout(r, 1000 * attempt));
