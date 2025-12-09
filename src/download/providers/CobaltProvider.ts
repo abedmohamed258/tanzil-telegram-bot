@@ -26,11 +26,13 @@ interface CobaltResponse {
     error?: { code?: string };
 }
 
-// Cobalt instances to rotate through
+// Cobalt instances to rotate through (verified from instances.cobalt.best)
+// v11 API format - POST to root endpoint
 const COBALT_INSTANCES = [
-    'https://api.cobalt.tools/api/json',
-    'https://cobalt.canine.tools/api/json',
-    'https://co.wuk.sh/api/json',
+    'https://cobalt-api.kwiatekmiki.com',     // YouTube support, score 84
+    'https://capi.3kh0.net',                   // YouTube support, score 76
+    'https://cobalt-api.meowing.de',           // YouTube support, score 88
+    'https://cobalt-backend.canine.tools',     // Good for non-YouTube, score 80
 ];
 
 export class CobaltProvider extends BaseProvider {

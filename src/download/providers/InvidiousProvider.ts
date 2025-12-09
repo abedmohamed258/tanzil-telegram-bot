@@ -44,14 +44,13 @@ interface InvidiousVideo {
     }>;
 }
 
-// Public Invidious instances
+// Public Invidious instances (verified from api.invidious.io)
 const INVIDIOUS_INSTANCES = [
-    'https://invidious.nerdvpn.de',
-    'https://inv.nadeko.net',
-    'https://invidious.protokolla.fi',
-    'https://invidious.perennialte.ch',
-    'https://yt.artemislena.eu',
-    'https://invidious.privacyredirect.com',
+    'https://inv.nadeko.net',        // uptime 97.27%
+    'https://invidious.nerdvpn.de',  // uptime 99.81%
+    'https://yewtu.be',               // uptime 99.93%
+    'https://invidious.f5.si',        // uptime 95.77%
+    'https://inv.perditum.com',       // uptime 98.28%, API enabled
 ];
 
 export class InvidiousProvider extends BaseProvider {
