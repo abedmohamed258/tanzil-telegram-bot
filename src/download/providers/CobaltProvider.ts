@@ -48,7 +48,7 @@ export class CobaltProvider extends BaseProvider {
     ];
 
     readonly capabilities: ProviderCapabilities = {
-        supportsVideoInfo: false, // Cobalt doesn't provide full video info
+        supportsVideoInfo: true, // Cobalt provides basic video info for fallback
         supportsDirectDownload: true,
         supportsAudioOnly: true,
         supportsQualitySelection: true,
