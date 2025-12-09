@@ -235,7 +235,7 @@ export class CobaltProvider extends BaseProvider {
             try {
                 logger.info(`[${this.name}] Trying instance`, { instance: instanceUrl });
 
-                const response = await fetch(instanceUrl, {
+                const response = await fetch(`${instanceUrl}/api/json`, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -244,10 +244,11 @@ export class CobaltProvider extends BaseProvider {
                     },
                     body: JSON.stringify({
                         url: videoUrl,
-                        videoQuality: quality,
-                        downloadMode: audioOnly ? 'audio' : 'auto',
-                        audioFormat: 'mp3',
-                        filenameStyle: 'basic',
+                        vCodec: 'h264',
+                        vQuality: quality,
+                        aFormat: 'mp3',
+                        filenamePattern: 'classic',
+                        isAudioOnly: audioOnly,
                     }),
                     signal: controller.signal,
                 });
