@@ -80,7 +80,7 @@ export class PipedProvider extends BaseProvider {
     /**
      * Get video info from Piped
      */
-    async getVideoInfo(url: string, options?: DownloadOptions): Promise<VideoInfo> {
+    async getVideoInfo(url: string, _options?: DownloadOptions): Promise<VideoInfo> {
         return this.executeWithTracking(async () => {
             // Check cache
             const cached = this.infoCache.get(url);
@@ -174,7 +174,7 @@ export class PipedProvider extends BaseProvider {
      */
     private async fetchPipedData(videoId: string): Promise<PipedResponse> {
         const instances = this.getHealthyInstances();
-        let lastError: Error | null = null;
+
 
         for (const instance of instances) {
             try {
@@ -192,8 +192,7 @@ export class PipedProvider extends BaseProvider {
                 if (res.ok) {
                     return await res.json() as PipedResponse;
                 }
-            } catch (err) {
-                lastError = err as Error;
+            } catch {
                 continue;
             }
         }
@@ -283,8 +282,20 @@ export class PipedProvider extends BaseProvider {
     }
 
     private extractVideoId(url: string): string | null {
-        const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/);
-        return match ? match[1] : null;
+        // Handle various YouTube URL formats including Shorts
+        const patterns = [
+            /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,  // Shorts
+            /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,  // Standard watch
+            /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,   // Embed
+            /youtu\.be\/([a-zA-Z0-9_-]{11})/,              // Short URL
+            /[?&]v=([a-zA-Z0-9_-]{11})/,                   // Query param fallback
+        ];
+
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) return match[1];
+        }
+        return null;
     }
 
     private getResolutionCategory(quality: string): VideoFormat['resolutionCategory'] {
