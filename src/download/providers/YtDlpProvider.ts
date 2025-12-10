@@ -414,12 +414,15 @@ export class YtDlpProvider extends BaseProvider {
 
     /**
      * Get YouTube extractor arguments for PO Token
+     * Uses bgutil HTTP server running on port 4416 for POT generation
      */
     private getYouTubeExtractorArgs(): string[] {
         if (process.env.NODE_ENV === 'production' || process.env.USE_POT_SERVER === 'true') {
+            // Using getpot plugin with bgutil HTTP server
+            // See: https://github.com/Brainicism/bgutil-ytdlp-pot-provider
             return [
                 '--extractor-args',
-                'youtubepot-bgutilhttp:base_url=http://127.0.0.1:4416',
+                'youtube:getpot=GVD;getpot_bgutil_baseurl=http://127.0.0.1:4416',
             ];
         }
         return [];

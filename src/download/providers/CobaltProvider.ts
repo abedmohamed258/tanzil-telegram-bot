@@ -26,15 +26,17 @@ interface CobaltResponse {
     error?: { code?: string };
 }
 
-// Cobalt instances to rotate through (verified December 2024)
-// Using /api/json endpoint format - tested and working
+// Cobalt instances to rotate through (from instances.cobalt.best - December 2024)
+// Using API endpoints with highest success rates
 const COBALT_INSTANCES = [
-    'https://coapi.kelig.me',              // API-only instance, reliable
-    'https://ca.haloz.at',                 // Good alternative
-    'https://nyc1.coapi.ggtyler.dev',      // NYC instance, fast
-    'https://cobalt.canine.tools',         // Community instance
-    'https://co.eepy.today',               // Backup instance
-    'https://cobalt-api.hyper.lol',        // Additional backup
+    'https://cobalt-api.kwiatekmiki.com',   // 88% success rate
+    'https://cobalt-api.meowing.de',        // 88% success rate
+    'https://cobalt-backend.canine.tools',  // 80% success rate
+    'https://kityune.imput.net',            // 76% (official cobalt.tools)
+    'https://capi.3kh0.net',                // 76% success rate
+    'https://nachos.imput.net',             // 72% (official cobalt.tools)
+    'https://sunny.imput.net',              // 72% (official cobalt.tools)
+    'https://blossom.imput.net',            // 72% (official cobalt.tools)
 ];
 
 export class CobaltProvider extends BaseProvider {
