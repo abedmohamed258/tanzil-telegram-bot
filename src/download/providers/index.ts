@@ -8,3 +8,4 @@ export { CobaltProvider } from './CobaltProvider';
 export { InvidiousProvider } from './InvidiousProvider';
 export { SSYouTubeProvider } from './SSYouTubeProvider';
 export { TikMateProvider } from './TikMateProvider';
+export { PipedProvider } from './PipedProvider';

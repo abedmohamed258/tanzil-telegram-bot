@@ -177,14 +177,16 @@ export class CobaltProvider extends BaseProvider {
     ): Promise<DownloadResult> {
         return this.executeWithTracking(async () => {
             // Parse quality from formatId (e.g., cobalt-1080 -> 1080)
-            let quality = '1080';
+            let quality = 'max'; // Default to max/best
             let audioOnly = options.audioOnly || false;
 
             if (options.formatId) {
                 if (options.formatId === 'cobalt-audio') {
                     audioOnly = true;
                 } else if (options.formatId.startsWith('cobalt-')) {
-                    quality = options.formatId.replace('cobalt-', '');
+                    const q = options.formatId.replace('cobalt-', '');
+                    // Keep explicit quality if requested, otherwise max
+                    quality = q === 'best' ? 'max' : q;
                 }
             }
 
@@ -259,6 +261,28 @@ export class CobaltProvider extends BaseProvider {
 
                         const finalUrl = testUrl.replace('//', '/').replace(':/', '://');
 
+                        // Prepare payloads (v10 and v7)
+                        const v10Payload = {
+                            url: videoUrl,
+                            videoQuality: quality === 'max' ? 'max' : quality + 'p',
+                            audioFormat: 'mp3',
+                            filenamePattern: 'classic',
+                            isAudioOnly: audioOnly,
+                        };
+
+                        const v7Payload = {
+                            url: videoUrl,
+                            vCodec: 'h264',
+                            vQuality: quality === 'max' ? '1080' : quality,
+                            aFormat: 'mp3',
+                            filenamePattern: 'classic',
+                            isAudioOnly: audioOnly,
+                        };
+
+                        // Decide payload based on endpoint or try both?
+                        // Most root endpoints are v10
+                        const payload = endpoint === '/' ? v10Payload : v7Payload;
+
                         const res = await fetch(finalUrl, {
                             method: 'POST',
                             headers: {
@@ -266,14 +290,7 @@ export class CobaltProvider extends BaseProvider {
                                 'Content-Type': 'application/json',
                                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                             },
-                            body: JSON.stringify({
-                                url: videoUrl,
-                                vCodec: 'h264',
-                                vQuality: quality,
-                                aFormat: 'mp3',
-                                filenamePattern: 'classic',
-                                isAudioOnly: audioOnly,
-                            }),
+                            body: JSON.stringify(payload),
                             signal: controller.signal,
                         });
 

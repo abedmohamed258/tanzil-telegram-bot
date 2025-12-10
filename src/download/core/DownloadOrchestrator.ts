@@ -21,7 +21,7 @@ import {
 } from './types';
 
 // Providers
-import { YtDlpProvider, CobaltProvider, InvidiousProvider, SSYouTubeProvider, TikMateProvider } from '../providers';
+import { YtDlpProvider, CobaltProvider, InvidiousProvider, PipedProvider, TikMateProvider } from '../providers';
 
 export class DownloadOrchestrator extends EventEmitter {
     private readonly providerManager: ProviderManager;
@@ -66,11 +66,9 @@ export class DownloadOrchestrator extends EventEmitter {
             }),
         );
 
-        // SSYouTube - Priority 4 (YouTube specialist when yt-dlp fails)
+        // Piped - Priority 3 (Robust YouTube Fallback)
         this.providerManager.registerProvider(
-            new SSYouTubeProvider(this.fileManager, {
-                timeout: 30000,
-            }),
+            new PipedProvider(this.fileManager),
         );
 
         // TikMate - Priority 4 (TikTok no-watermark specialist)
