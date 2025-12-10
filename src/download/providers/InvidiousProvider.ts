@@ -44,13 +44,17 @@ interface InvidiousVideo {
     }>;
 }
 
-// Public Invidious instances (verified from api.invidious.io)
+// Public Invidious instances (verified December 2024 from api.invidious.io)
+// Note: YouTube actively blocks these - instances may rotate frequently
 const INVIDIOUS_INSTANCES = [
-    'https://vid.puffyan.us',        // Consistent uptime
-    'https://inv.tux.pizza',         // Good performance
-    'https://invidious.drgns.space', // Reliable
-    'https://iv.ggtyler.dev',        // Backup
-    'https://inv.nadeko.net',        // Backup
+    'https://invidious.jing.rocks',      // High uptime, fast
+    'https://yewtu.be',                   // Popular, reliable
+    'https://invidious.privacyredirect.com', // Privacy-focused
+    'https://iv.nboeck.de',              // German server, stable
+    'https://invidious.protokolla.fi',   // Finnish server
+    'https://inv.tux.pizza',             // Backup
+    'https://invidious.fdn.fr',          // French server
+    'https://iv.melmac.space',           // Additional backup
 ];
 
 export class InvidiousProvider extends BaseProvider {

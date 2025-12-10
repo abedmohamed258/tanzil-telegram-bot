@@ -24,6 +24,7 @@ export enum DownloadState {
 }
 
 export enum Platform {
+    // Major platforms
     YOUTUBE = 'youtube',
     INSTAGRAM = 'instagram',
     TIKTOK = 'tiktok',
@@ -32,6 +33,18 @@ export enum Platform {
     REDDIT = 'reddit',
     VIMEO = 'vimeo',
     TWITCH = 'twitch',
+    // Additional platforms (supported via yt-dlp)
+    SNAPCHAT = 'snapchat',
+    PINTEREST = 'pinterest',
+    LINKEDIN = 'linkedin',
+    DAILYMOTION = 'dailymotion',
+    SOUNDCLOUD = 'soundcloud',
+    SPOTIFY = 'spotify',
+    VK = 'vk',
+    BILIBILI = 'bilibili',
+    RUMBLE = 'rumble',
+    ODYSEE = 'odysee',
+    // Fallback for unsupported/unknown
     UNKNOWN = 'unknown',
 }
 

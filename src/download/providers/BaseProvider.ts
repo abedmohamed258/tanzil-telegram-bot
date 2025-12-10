@@ -16,10 +16,10 @@ import {
     Platform,
 } from '../core/types';
 
-// Circuit breaker configuration
-const CIRCUIT_BREAKER_THRESHOLD = 5;    // failures before opening circuit
-const CIRCUIT_BREAKER_TIMEOUT = 60000;  // 1 minute cooldown
-const HEALTH_WINDOW = 20;               // number of requests to track
+// Circuit breaker configuration - tuned for resilience
+const CIRCUIT_BREAKER_THRESHOLD = 8;    // failures before opening circuit (was 5)
+const CIRCUIT_BREAKER_TIMEOUT = 120000; // 2 minute cooldown (was 1 min)
+const HEALTH_WINDOW = 30;               // number of requests to track (was 20)
 
 export abstract class BaseProvider implements IDownloadProvider {
     abstract readonly name: string;

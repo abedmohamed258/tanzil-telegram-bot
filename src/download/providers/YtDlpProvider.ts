@@ -100,11 +100,14 @@ export class YtDlpProvider extends BaseProvider {
 
     /**
      * Check if this provider supports the URL
+     * yt-dlp supports 1000+ sites, so we try any valid URL
      */
     supports(url: string): boolean {
         try {
-            const platform = this.getPlatform(url);
-            return this.supportedPlatforms.includes(platform);
+            // Validate it's a proper URL
+            new URL(url);
+            // yt-dlp supports 1000+ sites including unknown ones
+            return true;
         } catch {
             return false;
         }

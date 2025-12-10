@@ -21,7 +21,7 @@ import {
 } from './types';
 
 // Providers
-import { YtDlpProvider, CobaltProvider, InvidiousProvider } from '../providers';
+import { YtDlpProvider, CobaltProvider, InvidiousProvider, SSYouTubeProvider, TikMateProvider } from '../providers';
 
 export class DownloadOrchestrator extends EventEmitter {
     private readonly providerManager: ProviderManager;
@@ -41,9 +41,10 @@ export class DownloadOrchestrator extends EventEmitter {
 
     /**
      * Register default providers
+     * Order matters - higher priority providers are tried first
      */
     private registerDefaultProviders(): void {
-        // YtDlp - Priority 1 (primary)
+        // YtDlp - Priority 1 (primary, supports 1000+ sites)
         this.providerManager.registerProvider(
             new YtDlpProvider(this.fileManager, {
                 timeout: 180000,
@@ -51,21 +52,38 @@ export class DownloadOrchestrator extends EventEmitter {
             }),
         );
 
-        // Invidious - Priority 2 (YouTube fallback)
+        // Invidious - Priority 2 (YouTube fallback, privacy-focused)
         this.providerManager.registerProvider(
             new InvidiousProvider(this.fileManager, {
-                timeout: 15000,
+                timeout: 30000,
             }),
         );
 
-        // Cobalt - Priority 3 (general fallback)
+        // Cobalt - Priority 3 (general fallback, multi-platform)
         this.providerManager.registerProvider(
             new CobaltProvider(this.fileManager, {
                 timeout: 30000,
             }),
         );
 
-        logger.info('Download providers registered');
+        // SSYouTube - Priority 4 (YouTube specialist when yt-dlp fails)
+        this.providerManager.registerProvider(
+            new SSYouTubeProvider(this.fileManager, {
+                timeout: 30000,
+            }),
+        );
+
+        // TikMate - Priority 4 (TikTok no-watermark specialist)
+        this.providerManager.registerProvider(
+            new TikMateProvider(this.fileManager, {
+                timeout: 30000,
+            }),
+        );
+
+        logger.info('Download providers registered', {
+            count: 5,
+            providers: ['yt-dlp', 'invidious', 'cobalt', 'ssyoutube', 'tikmate'],
+        });
     }
 
     /**

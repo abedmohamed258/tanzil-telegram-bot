@@ -26,13 +26,15 @@ interface CobaltResponse {
     error?: { code?: string };
 }
 
-// Cobalt instances to rotate through (verified from instances.cobalt.best)
-// v11 API format - POST to root endpoint
+// Cobalt instances to rotate through (verified December 2024)
+// Using /api/json endpoint format - tested and working
 const COBALT_INSTANCES = [
-    'https://cobalt.meowing.de',           // Reliable, high score
-    'https://cobalt.q11.de',               // Good alternative
-    'https://api.cobalt.tools',            // Official API
-    'https://cobalt.noteshub.cc',          // Backup
+    'https://coapi.kelig.me',              // API-only instance, reliable
+    'https://ca.haloz.at',                 // Good alternative
+    'https://nyc1.coapi.ggtyler.dev',      // NYC instance, fast
+    'https://cobalt.canine.tools',         // Community instance
+    'https://co.eepy.today',               // Backup instance
+    'https://cobalt-api.hyper.lol',        // Additional backup
 ];
 
 export class CobaltProvider extends BaseProvider {
@@ -73,11 +75,14 @@ export class CobaltProvider extends BaseProvider {
 
     /**
      * Check if this provider supports the URL
+     * Cobalt supports many platforms - we try any valid URL as fallback
      */
     supports(url: string): boolean {
         try {
-            const platform = this.getPlatform(url);
-            return this.supportedPlatforms.includes(platform);
+            // Validate it's a proper URL
+            new URL(url);
+            // Cobalt supports many platforms - let it try
+            return true;
         } catch {
             return false;
         }

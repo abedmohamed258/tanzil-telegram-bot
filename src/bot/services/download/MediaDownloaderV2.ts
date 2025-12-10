@@ -2,7 +2,7 @@ import { Telegraf } from 'telegraf';
 
 import { randomUUID } from 'crypto';
 import { SupabaseManager } from '../../../database/SupabaseManager';
-import { DownloadOrchestrator, DownloadProgress, DownloadState } from '../../../download';
+import { DownloadOrchestrator, DownloadProgress } from '../../../download';
 import { RequestQueue } from '../../../queue/RequestQueue';
 import { FileManager } from '../../../utils/FileManager';
 import { DownloadRequest } from '../../../types';

@@ -58,10 +58,18 @@ export class ProviderManager {
 
     /**
      * Get providers for a specific platform, sorted by priority and health
+     * For UNKNOWN platforms, returns all providers that have yt-dlp as primary (universal support)
      */
     getProvidersForPlatform(platform: Platform): IDownloadProvider[] {
         return Array.from(this.providers.values())
-            .filter(e => e.enabled && e.provider.supportedPlatforms.includes(platform))
+            .filter(e => {
+                if (!e.enabled) return false;
+                // For UNKNOWN platforms, try all providers (they may support it via yt-dlp)
+                if (platform === Platform.UNKNOWN) {
+                    return true; // Let all providers try
+                }
+                return e.provider.supportedPlatforms.includes(platform);
+            })
             .sort((a, b) => {
                 // First by priority
                 const priorityDiff = a.provider.priority - b.provider.priority;
@@ -256,6 +264,7 @@ export class ProviderManager {
         try {
             const hostname = new URL(url).hostname.toLowerCase();
 
+            // Major platforms
             if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
                 return Platform.YOUTUBE;
             }
@@ -268,10 +277,10 @@ export class ProviderManager {
             if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
                 return Platform.TWITTER;
             }
-            if (hostname.includes('facebook.com') || hostname.includes('fb.watch')) {
+            if (hostname.includes('facebook.com') || hostname.includes('fb.watch') || hostname.includes('fb.com')) {
                 return Platform.FACEBOOK;
             }
-            if (hostname.includes('reddit.com')) {
+            if (hostname.includes('reddit.com') || hostname.includes('redd.it')) {
                 return Platform.REDDIT;
             }
             if (hostname.includes('vimeo.com')) {
@@ -279,6 +288,38 @@ export class ProviderManager {
             }
             if (hostname.includes('twitch.tv')) {
                 return Platform.TWITCH;
+            }
+
+            // Additional platforms
+            if (hostname.includes('snapchat.com')) {
+                return Platform.SNAPCHAT;
+            }
+            if (hostname.includes('pinterest.com') || hostname.includes('pin.it')) {
+                return Platform.PINTEREST;
+            }
+            if (hostname.includes('linkedin.com')) {
+                return Platform.LINKEDIN;
+            }
+            if (hostname.includes('dailymotion.com') || hostname.includes('dai.ly')) {
+                return Platform.DAILYMOTION;
+            }
+            if (hostname.includes('soundcloud.com')) {
+                return Platform.SOUNDCLOUD;
+            }
+            if (hostname.includes('spotify.com')) {
+                return Platform.SPOTIFY;
+            }
+            if (hostname.includes('vk.com') || hostname.includes('vk.ru')) {
+                return Platform.VK;
+            }
+            if (hostname.includes('bilibili.com') || hostname.includes('b23.tv')) {
+                return Platform.BILIBILI;
+            }
+            if (hostname.includes('rumble.com')) {
+                return Platform.RUMBLE;
+            }
+            if (hostname.includes('odysee.com')) {
+                return Platform.ODYSEE;
             }
 
             return Platform.UNKNOWN;
