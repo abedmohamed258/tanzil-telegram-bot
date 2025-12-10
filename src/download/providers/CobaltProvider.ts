@@ -242,23 +242,55 @@ export class CobaltProvider extends BaseProvider {
             try {
                 logger.info(`[${this.name}] Trying instance`, { instance: instanceUrl });
 
-                const response = await fetch(`${instanceUrl}/api/json`, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    },
-                    body: JSON.stringify({
-                        url: videoUrl,
-                        vCodec: 'h264',
-                        vQuality: quality,
-                        aFormat: 'mp3',
-                        filenamePattern: 'classic',
-                        isAudioOnly: audioOnly,
-                    }),
-                    signal: controller.signal,
-                });
+                // Try common API endpoints
+                const endpoints = [
+                    '/api/json',  // Standard v7/v10 web instances
+                    '/',          // API-only instances
+                    '/api/server/json' // Some v7 forks
+                ];
+
+                let response: Response | undefined;
+
+                for (const endpoint of endpoints) {
+                    try {
+                        const testUrl = instanceUrl.endsWith('/')
+                            ? `${instanceUrl.slice(0, -1)}${endpoint}`
+                            : `${instanceUrl}${endpoint}`;
+
+                        const finalUrl = testUrl.replace('//', '/').replace(':/', '://');
+
+                        const res = await fetch(finalUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                            },
+                            body: JSON.stringify({
+                                url: videoUrl,
+                                vCodec: 'h264',
+                                vQuality: quality,
+                                aFormat: 'mp3',
+                                filenamePattern: 'classic',
+                                isAudioOnly: audioOnly,
+                            }),
+                            signal: controller.signal,
+                        });
+
+                        const contentType = res.headers.get('content-type');
+                        if (res.ok && contentType && contentType.includes('application/json')) {
+                            response = res;
+                            break;
+                        }
+                    } catch (e) {
+                        logger.debug(`[${this.name}] Endpoint ${endpoint} failed`, { error: (e as Error).message });
+                        continue; // Try next endpoint
+                    }
+                }
+
+                if (!response) {
+                    throw new Error('All endpoints failed');
+                }
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
