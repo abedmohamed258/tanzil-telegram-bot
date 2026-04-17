@@ -1,107 +1,20 @@
-| TANZIL - Product Requirements Document v15.0 | Confidential · Engineering Use Only |
+| TANZIL - Product Requirements Document v15.2 | Confidential · Global Service Edition |
 | --- | --- |
 
 ---
 
-# 🔒 PROJECT IRON LAWS
+# 🔒 PROJECT IRON LAWS (Global Service Update)
 
-> **This section supersedes everything. It cannot be revoked, amended, or exempted. Any design, technical, or operational decision that conflicts with any clause here is immediately null and void.**
+## IL-09: Universal Service Architecture (The "Tanzil Engine")
 
-## IL-01: Absolute Zero-Cost Mandate
-
-**Not a single cent is spent. Not by the developer. Not by the user. Not by any party. Ever.**
-
-- Every tool, library, hosting service, database, monitoring system, or infrastructure component must be **completely free with no credit card required**.
-- If a free service changes its terms and becomes paid → it must be replaced with a free alternative immediately. There is no "upgrade plan". There is no credits system, no money, no subscriptions, no ads, and no monetization of any kind. Use of the bot is purely functional and free.
-- Any technical proposal containing the words "paid fallback", "premium tier", or "upgrade plan" is rejected without discussion.
-
-## IL-02: Zero Routine Maintenance
-
-**All routine operations are fully automated. No developer is required after launch for day-to-day operation. The system self-heals from all anticipated runtime failures.**
-
-- After development and deployment are complete, no developer is required for routine system operation.
-- The system must be **fully self-sufficient**: it self-heals from crashes, retries failed operations, cleans up its files, and continues running without human intervention for routine operations.
-- Any design that relies on "the operator will intervene to fix..." for routine operations is a design defect.
-- Every scheduled maintenance operation (cleanup, archival, daily limit reset, deletion requests) must run **fully automatically** via the Control Plane's internal scheduler.
-- `yt-dlp` is pinned to a fixed version at build time. If a platform extractor breaks due to platform changes, that platform is automatically disabled without crashing the system.
-
-### IL-02 Acknowledged Exceptions
-The following rare, non-routine scenarios are the **only** cases where human action is permitted. The system must degrade gracefully and auto-disable affected paths until the action is taken:
-1. **External credential renewal** — Instagram cookies or MTProto session strings expire due to external platform changes. The system auto-disables the affected feature path and alerts. A human must provide new credentials via the host's secret manager.
-2. **Infrastructure migration** — A free hosting provider changes its terms or shuts down. A human must redeploy to an alternative free host. The system's architecture is portable by design.
-3. **CSAM/Abuse reporting** — An admin must manually issue `/purge_hash` to block illegal content. This is an ethical obligation that cannot be automated.
-4. **Initial deployment and bootstrapping** — A human performs the one-time deployment, secret configuration, and first admin setup.
-5. **Lifecycle redeployment** — When `yt-dlp` extractors break beyond circuit-breaker recovery (see §3.14), the product owner may choose to rebuild and redeploy with a newer `yt-dlp` version. This constitutes a new deployment cycle, not routine maintenance. The system continues to serve cached content indefinitely between redeployment cycles.
-
-> **Rule:** Operator runbooks (§24) exist exclusively for these exception scenarios and for diagnostic visibility. They do NOT represent routine maintenance.
-
-## IL-03: Free Infrastructure Must Be Robust
-
-- **Database:** Free PostgreSQL (e.g., Neon, Supabase, or equivalent) — the sole store and single source of truth.
-- **Redis:** Completely optional and non-mandatory. The system must function at full efficiency without it.
-- **Hosting:** Free always-on services with no credit card required (e.g., Hugging Face Spaces, Render Free, Koyeb Free, or equivalent). If the service goes down → the system wakes up and resumes.
-- **Monitoring & Alerts:** All via Telegram itself (messages to admin). No Datadog. No PagerDuty. No paid services.
-- **Scheduled Tasks:** Via PostgreSQL polling or an internal scheduler. No external paid cron services.
-- Every component must tolerate sudden cold restarts and sleep behavior without data loss or state corruption.
-
-## IL-04: Secrets Management
-
-- Every secret (Bot Token, Database URL, etc.) is stored in environment variables only.
-- No `.env` files baked into the Docker image.
-- No secrets in logs.
-- If a cookie or MTProto session expires — the system automatically disables that feature instead of crashing.
-
-## IL-05: Robustness Over Features
-
-- If a feature conflicts with stability → the feature is removed.
-- If a platform conflicts with system health → the platform is automatically disabled.
-- No code path may lead to:
-  - Uncontrolled job accumulation (jobs must be admitted against user limits).
-  - A stuck job that lives forever.
-  - Orphaned temp files that fill the disk.
-  - An infinite retry loop.
-- Every job has an absolute `hard_deadline_at`. No work persists forever.
-- Every admitted job must have a deterministic cleanup path on failure.
-
-## IL-06: Personal Use and Open Access
-
-- The bot is designed for a closed circle of friends and personal use, not public mass scaling.
-- There is no credits system and no required balancing.
-- Purely transparent rate limiting (e.g., max 100 downloads per day per user) replaces complex ledgers to prevent backend exhaustion.
-- Referrals and complex economic gamification are explicitly omitted to keep the experience completely frictionless.
-
-## IL-07: Mandatory Bilingual Support
-
-- Arabic (`ar`) and English (`en`) are fully supported.
-- Every user-facing message must come from the localization catalog.
-- No hardcoded strings in business logic.
-- RTL layout must be verified for every inline keyboard.
-
-## IL-08: Security by Default
-
-- No user input is accepted without sanitization.
-- The system does not execute HTTP requests for user-provided URLs without verifying the platform and protocol first.
-- SSRF protection is enforced on URL unshortening operations.
-- CSAM and illegal content is blocked via `blocked_hashes` — automatic check before any processing.
-- No high-risk admin command executes without confirmation and audit logging.
-
-## IL-09: Telegram-Only Architecture
-
-- No web frontend. No mobile app. No public external API.
-- Telegram Bot API is the sole user interface.
-- Telegram is the sole delivery mechanism.
-- Telegram is the admin alerting system.
-- Long-Polling only. No Webhooks.
-
-## IL-10: Python-Only Tech Stack
-
-- Programming language: **Python 3.11+** only.
-- Telegram framework: **aiogram** (Bot API) + **Pyrogram** (MTProto for large files, optional).
-- Extraction engine: **yt-dlp** (pinned version).
-- Database: **PostgreSQL** only (via `psycopg` or `asyncpg`).
-- Redis: optional only (via `redis-py`).
-- No heavy web frameworks. A lightweight `/health` and `/metrics` server only (`aiohttp`).
-- No heavy ORMs. Explicit SQL queries or simple typed models.
+- **The Engine is Sovereign:** The core logic (extraction, processing, DB management) is built as a standalone **Universal Media Engine**. It must be 100% decoupled from the Telegram delivery logic.
+- **Unified Internal API:** The Engine must expose an internal, high-performance interface (Service Layer) that serves multiple frontends.
+- **Client Agnostic:** The architecture must natively support:
+    - **Telegram Bot Client** (Current priority)
+    - **Telegram Mini-App (TMA)** (Rich UI)
+    - **Web PWA** (Future expansion)
+    - **Native Mobile Clients** (Future expansion)
+- **Zero-Latency Ingress:** Links are processed via the Engine's asynchronous pipeline to ensure the "Universal Engine" is ready for real-time web requests.
 
 ---
 
@@ -141,44 +54,28 @@ Version 15.0 - Final Zero-Cost Production Specification
 
 ---
 
-# 1. Vision, Final Scope, and Platform Policy
+# 1. The Tanzil Swarm Vision (v17.0 Pipeline Edition)
 
-## 1.1 Product Philosophy
-Tanzil is a **single-scope, production-grade Telegram media downloader**. In this document, **single-release** means the product scope must be operationally complete at launch; it does **not** mean the system may skip safe deployment stages, kill switches, credential rotation, or other operational safeguards.
+## 1.1 Product Philosophy: The "Automated Production Factory"
+Tanzil is no longer just a media engine; it is a **Standardized Software Ecosystem**. By leveraging the **GitHub Spec-Kit** and a **Phase-Gated Pipeline**, we ensure the highest level of engineering quality with zero human maintenance.
 
-This specification therefore distinguishes between:
-- **product scope** - fixed in this document and not dependent on future roadmap phases;
-- **deployment safety** - staged rollout, runbooks, and kill switches used only to protect correctness in production.
+### The "Spec-Standard" Goal:
+- **Global Compliance:** Using GitHub Spec-Kit to define API contracts that follow international standards.
+- **Automated Lifecycle:** From code writing to PR review, testing, and deployment, the entire process is an automated pipeline.
+- **Component-Driven (Bit-Kit Architecture):** The system is built as a series of isolated, reusable components (Engines, Clients, APIs) that can be swapped or updated independently.
 
-The final build must be honest about runtime limits, platform health, charging semantics, infrastructure requirements, and delivery guarantees. Capabilities that cannot be operated reliably on the reference architecture are explicitly out of scope rather than hidden behind optimistic language.
-
-## 1.2 Mission Statement
-Tanzil allows a user to send a supported media URL in Telegram and receive the media directly inside Telegram with minimal interaction, while preserving:
-- usage fairness,
-- deterministic cleanup behavior,
-- broad extractor-based platform coverage,
-- operational containment of failures,
-- and low-maintenance runtime behavior.
-
-## 1.3 Core Objectives
-- **Broad support in one release** - support all policy-allowed, extractor-compatible public media platforms within the boundaries defined in this document.
-- **Resource safety** - usage must be tracked against daily limits; every failure must have a deterministic cleanup path.
-- **Operational completeness without future redesign** - the system must be buildable and supportable as-is, without assuming major post-release product evolution.
-- **Failure containment** - a broken platform, stale auth secret, failed worker, or invalid cache entry must not corrupt unrelated flows.
-- **Zero-maintenance operation (per IL-02)** - the system requires no daily manual intervention, no job surgery, and no platform-specific babysitting. All maintenance is fully automated.
-- **Honest boundaries** - support guarantees, file-size limits, auth-dependent behavior, and rejection rules must be explicit.
+## 1.2 The Production Pipeline (The Software Factory)
+- **Phase-Gate Logic:** Every phase in the development plan must pass an automated "Gate" (Linting, Testing, SDK Review) before merging.
+- **Auto-Documentation:** The system automatically generates and updates GitHub Pages documentation for every API change.
+- **Continuous Swarm Deployment:** The pipeline automatically deploys to multiple free-tier providers to maintain the "Swarm" integrity.
 
 ## 1.4 Final Product Scope
 The final scope of Tanzil includes:
-- accepting media URLs in Telegram private chats, groups, and channels,
-- classifying the request against policy and platform support rules,
-- resolving quality,
-- probing metadata before processing where applicable,
-- processing advanced extractions (Audio MP3 conversion, SponsorBlock segment removal, subtitle extraction),
-- downloading/extracting media through the approved extractor pipeline with native thumbnail embedding,
-- processing file-size, cache, and duplicate/shared-job rules,
-- delivering media directly inside Telegram,
-- and exposing enough admin, audit, and observability behavior to operate the system safely.
+- **Tanzil Core Engine:** A standalone service for media extraction, metadata probing, and transcoding.
+- **Internal API:** A clean interface for clients (Bot/Web) to interact with the Engine.
+- **Telegram Pro Client:** An advanced bot interface using the latest aiogram/Telegram API features (Inline Queries, Web Apps, Dynamic Keyboards).
+- **Processing Suite:** SponsorBlock, Audio-Only, Subtitles, 8K/HDR support, and iOS-optimized MP4 transcoding.
+- **Admin & Observability:** A comprehensive dashboard to monitor the "Engine" and its clients.
 
 This is the **final product scope**, not a first phase.
 
@@ -263,13 +160,26 @@ A request is considered acceptable only after deterministic URL extraction, norm
 
 ---
 
-# 2. Product Experience
+# 2. Product Experience (Ultra-UX Standards)
 
-## 2.1 Product Experience Principle
-This product must feel complete, final, and operationally honest. It must not read like a beta, phased release, or partially deferred system. User-facing behavior should prefer clarity, fast rejection when needed, and safe completion over ambiguous optimism.
+## 2.1 UI/UX Philosophy: The "Invisible Assistant"
+The product must feel like a premium, integrated part of the operating system. Interactions should be:
+- **Zero-Typing:** Buttons and menus should handle 90% of user needs.
+- **Instant Visual Feedback:** Use progress bars, status emojis, and dynamic captions.
+- **Context-Aware:** The UI changes based on the platform (e.g., specific options for YouTube vs. TikTok).
+- **Smooth & Professional:** Avoid bot-like "clunky" text; use professional, clear, and localized copy.
 
-## 2.2 Bot Persona
-Minimal, fast, and practical. Messages are short, useful, and avoid marketing language.
+## 2.2 Global Aesthetic
+- Use clear spacing and alignment.
+- Implement RTL-optimized layouts for Arabic.
+- Use high-quality thumbnails as visual anchors for every request.
+- Ensure all captions are neatly formatted with a consistent style.
+
+## 2.3 Key UI Features
+- **Dynamic Status Messages:** Instead of simple text, use a structured summary (Title, Channel, Duration, Quality, Size).
+- **Inline Multi-Choice:** Quality selection buttons should show the expected file size (e.g., `[ 720p (HD) ~ 45MB ]`).
+- **Interactive Progress:** A visual bar (e.g., `█████▒▒▒▒▒ 50%`) that updates with the download percentage (where available).
+- **One-Click Actions:** Quick buttons for `Audio-Only`, `Re-download (different quality)`, and `Cancel`.
 
 ## 2.3 Supported Languages
 - Arabic (`ar`) - default if Telegram client is Arabic
@@ -615,22 +525,39 @@ Since Tanzil is designed as an open and limitless tool for a close circle of use
 
 ---
 
-# 3. Acceptance, Classification, and Architecture
+# 3. Tanzil Engine Architecture: API-First Design
 
-## 3.1 Request Acceptance and Classification Principle
-Every request must be deterministically classified before any non-trivial side effect occurs. A request may become one of the following:
-- `accepted_guaranteed`
-- `accepted_best_effort`
-- `accepted_auth_dependent`
-- `rejected_invalid`
-- `rejected_unsupported`
-- `rejected_policy_blocked`
-- `rejected_auth_unavailable`
-- `rejected_inaccessible`
-- `rejected_oversized`
-- `rejected_internal_dependency`
+## 3.1 Architecture Philosophy: Service-Oriented (SOA)
+To ensure future expansion into PWA/App, Tanzil is built as a **Media Extraction Service**.
 
-No request may enter queueing, shared-job attachment, or charge-bearing flow before classification is complete.
+### The Tanzil Core Engine:
+- **Standalone Responsibility:** Handles all URL classification, metadata extraction, download coordination, and transcoding.
+- **RESTful Internal API:** Provides a clean interface for any client to query URL metadata, create jobs, and get status updates.
+- **Worker Coordination:** Manages a pool of workers via the database as a task queue.
+- **Transcoding Layer:** Highly optimized ffmpeg pipelines for 8K/HDR/iOS compatibility.
+
+## 3.2 Component Roles: Service vs. Client
+
+| Component | Responsibility | Future Expansion Role |
+| --- | --- | --- |
+| Tanzil Core Engine | Logic, Extraction, Transcoding, Database management | **Central Backend** for PWA/App |
+| Internal Service API | Interface for Clients (Bot/Web/App) | **Public API Layer** (optional) |
+| Telegram Client (Bot) | Input parsing, User session management, Delivery via Telegram API | **Telegram Client** (one of many) |
+| Web Client (PWA) | Future web interface | **Web Client** (coming soon) |
+| General Workers | Execution of extraction and transcoding tasks | **Infrastructure Layer** |
+
+## 3.3 Universal Service API Contract
+The Engine must provide a clean internal API with the following capabilities:
+1. `POST /api/v1/probe`: Extract metadata from any URL (Title, Thumb, Qualities, Sizes).
+2. `POST /api/v1/jobs`: Initiate a download job with specific parameters (Quality, Format, Enhancements).
+3. `GET /api/v1/jobs/{id}`: Get real-time status and progress updates.
+4. `GET /api/v1/cache/{hash}`: Fast lookup for previously processed content.
+
+### Performance Standard (Hyper-Speed):
+- **Metadata Probe:** < 3 seconds (Tier 1).
+- **Quality Choice Response:** < 1 second.
+- **Instant Job Start:** Job is claimed by worker within 2 seconds of creation.
+- **Parallel Tasks:** Simultaneous extraction and transcoding where possible.
 
 ### 3.1.1 Deterministic evaluation order
 Every incoming request must pass the following stages in order:
@@ -977,6 +904,47 @@ Telegram periodically updates its Bot API. Since the system uses `aiogram` as th
 
 > **Risk acceptance:** Like `yt-dlp` extractors, `aiogram` compatibility is expected to remain stable for 12-24 months per pinned version. If Telegram deprecates a method the system depends on, the system degrades gracefully and a lifecycle redeployment is required.
 
+### 3.17 The Universal Tanzil API (Engine Interface)
+To support a global ecosystem, the Engine exposes a strictly typed, client-agnostic service layer.
+
+#### API Standard:
+- **Transport:** Internal Python Service calls (for Bot) / JSON-over-HTTP (for Web/PWA).
+- **Authentication:** Token-based per client (Internal Bot, Web Frontend, App).
+- **Versioning:** Semantic versioning (e.g., `/v1/...`) to ensure PWA works even if Bot logic changes.
+
+#### Core Endpoints (Mental Model for Frontend):
+- `POST /v1/probe`: 
+    - Input: `url`
+    - Output: Full metadata, list of quality formats, thumbnails, and estimated sizes.
+- `POST /v1/jobs`:
+    - Input: `user_id`, `url`, `quality`, `enhancements` (SponsorBlock, etc.)
+    - Output: `job_id`, `estimated_wait_time`.
+- `GET /v1/jobs/{id}`:
+    - Output: Live status, download percentage, current stage.
+- `GET /v1/user/usage`:
+    - Output: Daily remaining quota, history.
+
+### 3.18 Zero-Cost AI Enhancements (The Intelligence Layer)
+To compete with "world-class" products, Tanzil utilizes 100% free AI inference for media enhancement:
+- **Smart Summarization:** Uses Hugging Face free inference (e.g., Mistral/Llama) to generate a 1-sentence summary of the video based on its title and description.
+- **Auto-Translation:** Automatically translates video titles/descriptions to the user's preferred language (AR/EN).
+- **Metadata Enrichment:** Automatically finds missing tags or uploader info to ensure the media file is perfectly organized in the user's library.
+- **Safety Rule:** AI integration must use asynchronous, non-blocking calls and fail gracefully without affecting the primary download flow.
+
+### 3.20 The "Tanzil-Bridge" Protocol (Telegram-as-a-CDN)
+Tanzil revolutionizes media delivery for Web/PWA clients without using expensive storage.
+
+- **The Bridge Logic:** When a Web/PWA client requests a video, the Engine uses the stored `telegram_file_id` to fetch the file from Telegram's cloud via a dedicated **Gateway Worker**.
+- **On-the-Fly Streaming:** The Gateway Worker streams the file directly to the user's browser in chunks. Telegram's servers act as the infinite, free storage layer, while our workers act as the "last-mile" delivery bridge.
+- **Cache-Hit Nirvana:** Since the `file_id` is permanent, the PWA can stream the same video 1000 times without ever re-downloading it from the source (YouTube/TikTok), achieving true zero-cost infinite storage.
+
+### 3.21 AI Semantic Search & Library Intelligence
+- **Semantic Indexing:** Every `ai_summary` and `ai_metadata` field is indexed using a lightweight vector database (or JSONB-based similarity search in PostgreSQL).
+- **Natural Language Querying:** 
+    - *User:* "Find the video from last week about space exploration."
+    - *Engine:* Matches the meaning (Semantic) to the `ai_summary` and retrieves the `file_id` immediately.
+- **Predictive Pre-fetching:** Based on user history, the swarm anticipates which platforms or qualities the user prefers and pre-warms the cache before the user even interacts.
+
 # 4. URL Matching, Normalization, and Media Inspection
 
 ## 4.1 URL Pattern Matcher
@@ -1046,12 +1014,14 @@ CREATE TABLE users (
     daily_usage_limit      INT DEFAULT 100,
     daily_usage_count      INT DEFAULT 0,
     last_usage_reset       TIMESTAMPTZ DEFAULT NOW(),
+    source_client          VARCHAR(20) DEFAULT 'telegram_bot' CHECK (source_client IN ('telegram_bot','telegram_mini_app','web_pwa','native_app')),
     created_at             TIMESTAMPTZ DEFAULT NOW(),
     updated_at             TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX idx_users_deleted ON users(is_deleted) WHERE is_deleted = TRUE;
 CREATE INDEX idx_users_banned ON users(is_banned) WHERE is_banned = TRUE;
+CREATE INDEX idx_users_client ON users(source_client);
 ```
 
 - `users` stores profile, settings, and rate-limiting counters.
@@ -1145,6 +1115,9 @@ CREATE TABLE media_jobs (
     worker_node            TEXT REFERENCES workers(node_id),
     claim_token            UUID,
     fanout_worker_node     TEXT REFERENCES workers(node_id),
+    ai_summary             TEXT, -- Smart 1-sentence summary
+    ai_metadata            JSONB, -- Translated titles, tags, etc.
+    source_client          VARCHAR(20) DEFAULT 'telegram_bot' CHECK (source_client IN ('telegram_bot','telegram_mini_app','web_pwa','native_app')),
     claimed_at             TIMESTAMPTZ,
     started_processing_at  TIMESTAMPTZ,
     upload_started_at      TIMESTAMPTZ,
@@ -1168,19 +1141,8 @@ CREATE TABLE media_jobs (
     updated_at             TIMESTAMPTZ DEFAULT NOW(),
     completed_at           TIMESTAMPTZ
 );
-
-CREATE INDEX idx_jobs_claim_ready ON media_jobs(priority DESC, created_at, next_attempt_after)
-WHERE status = 'queued';
-CREATE INDEX idx_jobs_shared_lookup_active ON media_jobs(url_hash, quality, created_at)
-WHERE status IN ('queued','claiming','probing','processing','uploading');
-CREATE INDEX idx_jobs_worker_status ON media_jobs(worker_node, status);
-CREATE INDEX idx_jobs_fanout_lease ON media_jobs(status, fanout_lease_until);
-CREATE INDEX idx_jobs_hard_deadline ON media_jobs(status, hard_deadline_at)
-WHERE status IN ('queued','claiming','probing','processing','uploading','delivering');
-CREATE INDEX idx_jobs_progress_stale ON media_jobs(status, last_progress_at)
-WHERE status IN ('claiming','probing','processing','uploading','delivering');
-
 ```
+
 
 `short_id` generation rule:
 - `short_id` is generated at job creation time as the first 8 characters of a hex-encoded UUID v4 (e.g., `a3f9c2b1`).
@@ -1476,6 +1438,14 @@ CREATE TABLE deletion_requests (
     notes            TEXT
 );
 ```
+
+### 5.2.23 Smart Metadata Pruning (The "Lean Engine" Strategy)
+To ensure the DB stays under the 500MB free-tier limit indefinitely, Tanzil implements an aggressive pruning strategy.
+
+- **Non-Essential Metadata:** For jobs older than 30 days, clear the `ai_metadata` (JSONB) and `title` fields, but retain the `url_hash`, `platform`, `quality`, and `telegram_file_id`.
+- **Reasoning:** 95% of user repeat-requests (Cache Hits) happen within the first 30 days. For older items, we only need the `file_id` for delivery; the rich metadata can be re-probed if needed.
+- **Auto-Archival:** Records in `job_events` and `job_retry_log` are pruned every 14 days, with summary metrics persisted in the `metrics` dashboard.
+- **Zero-Routine:** This is fully automated via the Janitor sweep (§16.4).
 
 ### 5.2.23 Schema Migrations
 ```sql
@@ -2342,18 +2312,30 @@ User-facing support is intentionally minimal in this product.
 5. Usage history and audit logs are retained for protective reasons, but are pseudonymized.
 6. The user is logged out, and future interactions are treated as a fresh user.
 
-### 12.7.2 Re-registration After Deletion
-When a previously deleted user (with `is_deleted = TRUE`) sends `/start` again, the system must handle their return deterministically:
+### 12.8 Extreme Security & Edge Case Protocols
+To ensure the Engine is "Bulletproof," we implement the following advanced safeguards.
 
-1. On receiving `/start` from a user whose `users.is_deleted = TRUE`:
-   - Reactivate the existing record: `SET is_deleted = FALSE, updated_at = NOW()`.
-   - Update `first_name`, `last_name`, and `username` from the current Telegram update payload.
-   - The user receives the standard `onboarding.welcome` message as if they were a new user.
-2. **Integrity invariant:** The reactivated user never sees their old pseudonymized data. Historical records are retained for audit, but the user's effective usage starts fresh.
-3. **What is NOT restored:**
-   - Previous job history (URLs were redacted to `[REDACTED]`).
-   - Previous usage counters (reset to `0`).
-   - Previous abuse log entries (retained but tied to the same `user_id`).
+| Threat / Edge Case | Protocol | Action |
+| --- | --- | --- |
+| **SSRF via Redirects** | The Engine's egress is restricted. Before following a redirect, the target IP is resolved and checked against private/local CIDR blocks. | Instant rejection (E001) if internal IP is targeted. |
+| **Link Bombing** | Rate-limiting is applied at the **Normalizer** stage before the DB is even queried. | Silent drop or 429 response if >10 requests/sec per user. |
+| **Infinite Live Streams** | The **Probe** stage checks the `is_live` flag from metadata. | Reject with E001 (Live streams not supported). |
+| **Username Squatting** | All records are tied to the immutable `telegram_id`. Usernames are treated as ephemeral metadata. | History remains intact even if the user changes their @handle 100 times. |
+| **Stale Web Sessions** | TMA/PWA sessions use short-lived JWTs signed with a rolling secret stored in `system_flags`. | Force re-auth via Telegram if the secret rotates or session expires. |
+
+### 12.10 The "Sentinel" Security Protocol (Zero-Cost PoW)
+To protect the Swarm from DDoS without paid tools (Cloudflare), Tanzil implements a client-side Proof-of-Work challenge.
+
+- **The Challenge:** Before the Engine accepts a `POST` request from the PWA/App, it issues a non-standard HTTP header `X-Tanzil-Challenge`.
+- **The Work:** The client must solve a lightweight cryptographic puzzle (SHA-256 partial collision) in the background.
+- **The Result:** Only requests with a valid `X-Tanzil-Response` are admitted. This effectively raises the cost for botnets to near-infinity while remaining transparent to human users.
+
+### 12.11 The "Lazarus" Recovery Protocol (Self-Replication)
+Tanzil is designed to survive the total shutdown of any hosting provider.
+
+- **State Syncing:** Every 24 hours, the Janitor encrypts the DB schema and critical ledger data (pseudonymized) into a compact binary format.
+- **Cloud Archival:** This backup is sent as a `document` to a hidden **Private Telegram Archive Channel**.
+- **Self-Replication:** The Engine includes a "Bootstrap Mode." If deployed to a fresh provider with only the Telegram Bot Token, it can fetch the latest backup from the Telegram Channel and restore the entire ecosystem state automatically.
 
 ---
 
@@ -2571,44 +2553,43 @@ WHERE user_id = :user_id
   AND status = 'processing';
 ```
 
-## 13.4 Product Analytics Plan
-The product must emit analytics events to logs or metrics for aggregation and audit visibility.
+### 13.6 Unified Authentication (Telegram-Native Auth)
+To ensure zero-friction between Bot, TMA, and PWA, Tanzil utilizes **Telegram-Native Web App Authentication**.
 
-### Required events
-- `user_started`
-- `url_submitted`
-- `quality_selected`
-- `cache_hit`
-- `cache_stale_invalidated`
-- `job_created`
-- `job_completed`
-- `job_failed`
-- `job_cancelled`
-- `job_delivery_failed`
-- `refund_issued`
-- `referral_rewarded`
+- **Protocol:** Uses the `initData` or `initDataUnsafe` signed strings provided by Telegram.
+- **Verification:** The Engine validates the signature using the `BOT_TOKEN` hash (Zero-Cost, Local).
+- **Session Bridge:** 
+    - When a user opens the TMA from the Bot, their `user_id` is automatically verified.
+    - When a user visits the PWA externally, they are prompted to "Login with Telegram" (Widget), which provides a signed payload.
+- **Identity Consistency:** A user's credits, history, and settings are tied to their `telegram_id` across all frontends. No passwords required.
 
-### Required dimensions
-- `user_id`
-- `platform`
-- `quality`
-- `job_uuid`
-- `is_cache_hit`
-- `is_shared_job`
-- `error_code`
-- `duration_ms`
-- `language_code`
-- `worker_node`
+### 13.8 GitHub Spec-Kit Integration (The Standards Layer)
+To ensure Tanzil's API is "World Class," it follows the GitHub Spec-Kit standards.
 
-### Required weekly reports
-- DAU / WAU
-- downloads by platform
-- cache-hit ratio
-- median completion time by platform
-- failure rate by platform and error code
-- referral conversion rate
-- credits consumed vs refunded
-- delivery failure rate by reason
+- **Spec Definition:** All Service Layer endpoints are defined using the Spec-Kit's JSON/YAML schema.
+- **Contract Testing:** The Pipeline uses the Spec-Kit to verify that the Engine's actual output matches the defined specification.
+- **Client Generation:** Using these specs, the system can automatically generate SDKs for the PWA (TypeScript) and Mobile Apps (Dart/Flutter).
+
+### 13.10 Tanzil Dev-SDK & OpenCode Integration
+To ensure zero-error production, Tanzil is developed using a custom-built **Tanzil Dev-SDK** (Python-based CLI) that integrates with the **OpenCode** agent.
+
+#### Dev-SDK Commands:
+- `tanzil-dev review`: Automated logic audit, linting, and style check.
+- `tanzil-dev validate-spec`: Verifies API contracts against the GitHub Spec-Kit.
+- `tanzil-dev test`: Runs unit and integration tests (Pytest).
+- `tanzil-dev ship`: Automated Git commit, tagging, push, and deployment trigger.
+
+#### OpenCode Production Protocol:
+1. **Task Execution:** OpenCode completes a task (e.g., Task 1.1).
+2. **Local Review:** OpenCode runs `tanzil-dev review` and fixes all errors.
+3. **Spec Check:** OpenCode runs `tanzil-dev validate-spec` to ensure the API matches the Global Spec.
+4. **Final Shipping:** OpenCode runs `tanzil-dev ship` to push to the Swarm.
+
+### 13.11 Automated Swarm Pipeline (GitHub Actions)
+- **CI Layer:** Every `push` triggers a GitHub Action to verify the Spec-Kit and run the full E2E test suite.
+- **CD Layer:** Successful builds are automatically deployed to the Swarm (Hugging Face, Koyeb, Render).
+- **Documentation:** The Pipeline updates the GitHub Pages site with the latest API documentation and SDKs generated from the Spec-Kit.
+
 
 ---
 
@@ -3206,54 +3187,20 @@ These are limited operational follow-up tasks, not deferred product phases:
   - `settings` ↔ `الإعدادات`
 - RTL layout must be verified for inline keyboards, punctuation, number interpolation, and mixed Arabic/English platform names.
 
-## 22.2 Minimum Message Catalog
+### 22.3 Neural UX: Voice & Semantic Interaction
+To push the boundaries of "Cosmic Perfection," Tanzil introduces natural language control.
 
-| `onboarding.welcome` | Welcome to Tanzil! Send a YouTube, Instagram, or TikTok link. | أهلاً بك في تنزيل! أرسل رابط YouTube أو Instagram أو TikTok. |
-| `onboarding.returning` | Welcome back! Use /status to see active jobs. | أهلاً بعودتك! استخدم أمر /status لرؤية التنزيلات النشطة. |
-| `help.no_url` | Send a YouTube, Instagram, or TikTok link. | أرسل رابط YouTube أو Instagram أو TikTok. |
-| `status.none` | No active downloads. Send a link to start. | لا توجد تنزيلات نشطة. أرسل رابطاً للبدء. |
-| `status.item` | {job_id} · {platform} · {quality} · {state} | {job_id} · {platform} · {quality} · {state} |
-| `status.role.requested_by_you` | requested by you | طلبته أنت |
-| `status.role.shared_subscriber` | shared subscriber | مشترك في طلب مشترك |
-| `progress.checking` | 🔍 Checking link... | 🔍 جارٍ فحص الرابط... |
-| `progress.probing` | 📋 Inspecting media... | 📋 جارٍ فحص الوسائط... |
-| `progress.downloading` | ⬇️ Downloading: {title} | ⬇️ جارٍ التنزيل: {title} |
-| `progress.uploading` | ⬆️ Uploading to Telegram... | ⬆️ جارٍ الرفع إلى تيليجرام... |
-| `progress.delivering` | 📤 Delivering result... | 📤 جارٍ تسليم النتيجة... |
-| `quality.default_applied` | No selection received. Default quality was used. | لم يتم استلام اختيار. تم استخدام الجودة الافتراضية. |
-| `shared.attached_pending` | This media is already being checked. You will be notified when it starts. | يتم الآن فحص هذه الوسائط. سيتم إخطارك عند البدء. |
-| `shared.attached_active` | Another download of this media is in progress. You will receive the result when ready. | يوجد تنزيل آخر لهذه الوسائط قيد التنفيذ. ستصلك النتيجة عند الجاهزية. |
-| `shared.revert` | This shared download could not be delivered. Your usage limit was preserved. | تعذر تسليم هذا التنزيل المشترك. تم الحفاظ على حدك اليومي. |
-| `settings.saved` | Your settings were saved. | تم حفظ الإعدادات. |
-| `cancel.ok` | Your download was cancelled. | تم إلغاء التنزيل. |
-| `cancel.none` | You have no cancellable downloads right now. | لا توجد لديك تنزيلات قابلة للإلغاء حالياً. |
-| `cache.hit` | ⚡ Delivered from cache. | ⚡ تم الإرسال من الذاكرة المؤقتة. |
-| `cache.stale_fallback` | Cached copy was unavailable. Retrying with a fresh download. | النسخة المؤقتة غير متاحة. تتم إعادة المحاولة بتنزيل جديد. |
-| `callback.expired` | Selection expired. | انتهت صلاحية الاختيار. |
-| `callback.not_owner` | Not your request. | هذا الطلب ليس لك. |
-| `error.E001` | Send a valid supported link. | أرسل رابطاً صالحاً ومدعوماً. |
-| `error.E002` | The download failed after several retries. Your daily limit was not consumed. | فشل التنزيل بعد عدة محاولات. لم يتم احتساب هذه المحاولة من حدك اليومي. |
-| `error.E003` | This platform is not supported. | هذه المنصة غير مدعومة. |
-| `error.E004` | File too large ({size_mb}MB). Maximum supported: {max_mb}MB. Try a lower quality. | الملف كبير جداً ({size_mb}MB). الحد الأقصى: {max_mb}MB. جرّب جودة أقل. |
-| `error.E005` | Daily limit reached. Please wait for the daily reset. | لقد وصلت للحد الأقصى اليومي. يرجى الانتظار حتى التجديد غداً. |
-| `error.E006` | Your account is restricted. | حسابك مقيّد. |
-| `error.E007` | Your requests have been queued gracefully. They will process soon! | تم وضع طلباتك في الطابور بسلاسة. سيتم معالجتها قريباً! |
-| `error.E008` | Telegram delivery is temporarily failing. Retrying. | يوجد فشل مؤقت في التسليم عبر تيليجرام. تتم إعادة المحاولة. |
-| `error.E009` | This content is private, age-gated, or inaccessible. | هذا المحتوى خاص أو مقيّد بالعمر أو غير متاح. |
-| `error.E010` | A worker timed out. The job is being recovered. | انتهت مهلة العامل. تتم استعادة المهمة. |
-| `error.E011` | Service is busy. Try again later. | الخدمة مشغولة. حاول لاحقاً. |
-| `error.E012` | A temporary internal dependency failed. Please try again later. | حدث فشل مؤقت في تبعية داخلية. حاول لاحقاً. |
-| `error.E013` | _(silent — duplicate update suppressed, no user message)_ | _(صامت — تم تجاهل التحديث المكرر)_ |
-| `error.E016` | System storage is temporarily full. Try again later. | مساحة التخزين ممتلئة مؤقتاً. حاول لاحقاً. |
-| `error.E014` | Could not inspect this media safely. | تعذر فحص هذه الوسائط بشكل آمن. |
-| `error.E015` | This content requires authentication that is not currently available. | هذا المحتوى يتطلب مصادقة غير متاحة حالياً. |
-| `error.delivery_failed` | Delivery failed and your usage limit was preserved. | فشل التسليم وتم الحفاظ على حدك اليومي. |
-| `degraded.mtproto_unavailable` | Large-file delivery is temporarily unavailable. Try a smaller file or try again later. | تسليم الملفات الكبيرة غير متاح مؤقتاً. جرّب ملفاً أصغر أو حاول لاحقاً. |
-| `error.unknown_command` | Unknown command. Use /help. | أمر غير معروف. استخدم /help. |
-| `limit.info` | 📊 Daily Limit: {limit} media items. Resets at 00:00 UTC. | 📊 الحد اليومي: {limit} عنصر. يتجدد الساعة 00:00 UTC. |
-| `degraded.all_platforms_disabled` | ⚠️ All download platforms are currently unavailable. Only cached content can be served. | ⚠️ جميع منصات التنزيل غير متاحة حالياً. يمكن فقط تقديم المحتوى المخزن مؤقتاً. |
-| `delete_data.confirm` | ⚠️ This will permanently delete your account data. This action cannot be undone. Confirm? | ⚠️ سيتم حذف بيانات حسابك نهائياً. لا يمكن التراجع. تأكيد؟ |
-| `delete_data.completed` | Your data has been deleted. Future interactions will start fresh. | تم حذف بياناتك. ستبدأ التفاعلات المستقبلية من الصفر. |
+- **The Voice Layer:** Users send a voice message to the Bot (up to 20s).
+- **The Transcriber:** The Engine uses Hugging Face's **OpenAI Whisper** free inference endpoint to convert speech to text (Zero-Cost).
+- **The Semantic Processor:** The Engine parses the text using a lightweight LLM (Mistral/Llama) to map it to a command (e.g., "Download the link I sent in 480p").
+- **Multilingual Support:** This layer natively supports Arabic dialects and English, providing the world's first "Hands-Free" media extraction experience.
+
+### 22.4 Predictive Smart-Queue (The "Oracle" Engine)
+Tanzil anticipates user needs to eliminate the perception of latency.
+
+- **Pattern Learning:** If a user consistently downloads TikToks as MP3s, the Engine pre-extracts the audio track the moment a TikTok link hits the Normalizer.
+- **Cache Pre-Warming:** If a shared job is popular (e.g., a viral video), the Engine pre-emptively generates multiple quality versions and caches their `file_id`s in anticipation of a surge in requests.
+- **Result:** For frequent users, the "Wait Time" becomes effectively zero.
 
 ### Unused Message Keys
 (Section removed as proactive credit warnings are no longer applicable.)
