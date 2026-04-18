@@ -5,7 +5,7 @@ from typing import Annotated
 
 import typer
 
-from tanzil.cli.server import SOCKET_PATH, run_server
+from tanzil.cli.server import run_server
 
 app = typer.Typer(help="Tanzil Engine CLI Client")
 
