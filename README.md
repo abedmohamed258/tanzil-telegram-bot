@@ -1,44 +1,36 @@
-# Tanzil Project
+# Tanzil Bot Ecosystem
 
-## Initialization
+[![Production Deployment](https://github.com/abedmohamed258/tanzil-telegram-bot/actions/workflows/production.yml/badge.svg)](https://github.com/abedmohamed258/tanzil-telegram-bot/actions/workflows/production.yml)
 
-To set up your development environment:
+Tanzil is a high-performance, event-driven Telegram bot ecosystem designed for large-scale file extraction and processing.
 
-1. **Clone the repository**:
+## 🚀 Live Project
+- **Repository**: [https://github.com/abedmohamed258/tanzil-telegram-bot](https://github.com/abedmohamed258/tanzil-telegram-bot)
 
-   ```bash
-   git clone <repo-url>
-   cd tanzil
-   ```
+## 🛠 Features
+- **Event-Driven Core**: Robust task management and real-time event broadcasting.
+- **Persistent State**: SQLite-backed session management ensuring no data loss.
+- **Enterprise DevOps**: Fully containerized with Docker, automated SSL with Certbot, and CI/CD via GitHub Actions.
+- **Scalable Architecture**: Decoupled transport and domain layers for multi-platform support.
 
-2. **Run the bootstrapper**:
-   ```bash
-   ./scripts/init.sh
-   ```
-   This will check for prerequisites, create the `.tanzil/` directory, set up a Python virtual environment, and install core dependencies.
+## 📦 Local Setup
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/abedmohamed258/tanzil-telegram-bot.git
+    cd tanzil-telegram-bot
+    ```
 
-## Verification
+2.  **Run the bootstrapper**:
+    ```bash
+    ./scripts/init.sh
+    ```
+    This will check for prerequisites, create a virtual environment, and install core dependencies.
 
+## 🚢 Production Deployment
+For deploying Tanzil to a production VPS using Docker, see [PRODUCTION.md](PRODUCTION.md).
+
+## ✅ Verification
 Run the health check tool:
-
 ```bash
 ./bin/tanzil doctor-alias
 ```
-
-## Environment Management
-
-- **Python**: Use `.tanzil/venv/bin/python` or run via `./bin/tanzil`.
-- **Node.js**: Use `pnpm` in the project root.
-
-## Production Deployment
-
-For deploying Tanzil to a production VPS using Docker:
-
-1. **Initial Setup**: Run the initialization script on your VPS:
-   ```bash
-   chmod +x scripts/deployment/setup-vps.sh
-   ./scripts/deployment/setup-vps.sh
-   ```
-2. **Configuration**: Copy `.env.example` to `.env` and fill in your secrets.
-3. **Deploy**: Start the stack with `docker compose -f docker-compose.prod.yml up -d`.
-4. **CI/CD**: Configure GitHub Secrets (`SSH_HOST`, `SSH_USER`, `SSH_KEY`) to enable automated updates on push to `main`.
