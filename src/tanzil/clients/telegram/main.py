@@ -5,15 +5,16 @@ import signal
 
 from aiogram import Bot, Dispatcher
 
-from .handlers import commands, downloads, callbacks, errors
-from .middleware.auth import WhitelistMiddleware
 from .config import load_config
+from .handlers import callbacks, commands, downloads, errors
+from .middleware.auth import WhitelistMiddleware
+from .models.store import TaskStore
 from .utils.engine import EngineWrapper
 from .utils.progress import ProgressReporter
-from .models.store import TaskStore
 
 
 async def main():
+
     config_path = os.getenv("TANZIL_CONFIG", "config.yaml")
     config = load_config(config_path)
 
@@ -23,7 +24,7 @@ async def main():
     bot = Bot(token=config.telegram.token.get_secret_value())
     dp = Dispatcher()
 
-    webhook_secret = os.getenv("TELEGRAM_WEBHOOK_SECRET")
+    progress_reporter = ProgressReporter(bot)
     
     # ... (integration with Starlette/FastAPI for webhook)
     engine_wrapper = EngineWrapper(

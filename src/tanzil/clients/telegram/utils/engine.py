@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Optional
 from uuid import UUID
 
-from ..models.schemas import DownloadStatus, TelegramDownloadTask
+from ..models.schemas import TelegramDownloadTask
 from ..models.store import TaskStore
 
 

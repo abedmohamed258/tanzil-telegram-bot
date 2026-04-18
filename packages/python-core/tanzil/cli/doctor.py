@@ -1,4 +1,5 @@
 import typer
+
 from tanzil.utils.health import run_health_check
 
 app = typer.Typer()

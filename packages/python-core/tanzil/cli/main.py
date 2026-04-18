@@ -1,6 +1,7 @@
 import typer
-from tanzil.cli.init import init
+
 from tanzil.cli.doctor import doctor
+from tanzil.cli.init import init
 
 app = typer.Typer()
 

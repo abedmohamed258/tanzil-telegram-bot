@@ -1,6 +1,6 @@
 import os
-import shutil
 import tempfile
+
 from tanzil.utils.logging import setup_logging
 
 logger = setup_logging()

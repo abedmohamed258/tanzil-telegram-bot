@@ -1,22 +1,21 @@
 import re
 from uuid import uuid4
 
-from aiogram import Router, F
+from aiogram import F, Router
 from aiogram.types import Message
 
-from ..models.schemas import TelegramDownloadTask, DownloadStatus
+from ..models.schemas import DownloadStatus, TelegramDownloadTask
+from ..models.store import TaskStore
 from ..utils.engine import EngineWrapper
 from ..utils.progress import get_progress_keyboard
 
 router = Router()
 
+
 URL_PATTERN = re.compile(
     r"(?P<url>(?:https?|ftp)://[^\s]+)",
     re.IGNORECASE,
 )
-
-
-from ..models.store import TaskStore
 
 
 @router.message(F.text.regexp(URL_PATTERN))

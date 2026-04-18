@@ -1,6 +1,7 @@
-import os
 import asyncio
-from aiogram.types import Message, FSInputFile
+import os
+
+from aiogram.types import FSInputFile, Message
 
 
 async def deliver_file(message: Message, file_path: str, upload_limit_mb: int = 50):

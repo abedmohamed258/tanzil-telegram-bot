@@ -1,7 +1,5 @@
 import platform
 import subprocess
-import os
-import sys
 from typing import Dict
 
 
@@ -15,7 +13,7 @@ def check_node() -> Dict[str, str]:
             ["node", "--version"], capture_output=True, text=True, check=True
         )
         return {"version": res.stdout.strip(), "status": "PASS"}
-    except:
+    except Exception:
         return {"version": "N/A", "status": "FAIL"}
 
 
@@ -25,7 +23,7 @@ def check_git() -> Dict[str, str]:
             ["git", "--version"], capture_output=True, text=True, check=True
         )
         return {"version": res.stdout.strip(), "status": "PASS"}
-    except:
+    except Exception:
         return {"version": "N/A", "status": "FAIL"}
 
 

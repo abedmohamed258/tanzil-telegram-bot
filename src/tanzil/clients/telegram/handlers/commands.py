@@ -1,8 +1,10 @@
-from aiogram import Router
-from aiogram.filters import CommandStart, Command, CommandObject
-from aiogram.types import Message
 from uuid import UUID
 
+from aiogram import Router
+from aiogram.filters import Command, CommandObject, CommandStart
+from aiogram.types import Message
+
+from ..models.store import TaskStore
 from ..utils.engine import EngineWrapper
 
 router = Router()
@@ -17,9 +19,6 @@ async def cmd_start(message: Message):
         "/list - Show active downloads\n"
         "/cancel {id} - Stop a download"
     )
-
-
-from ..models.store import TaskStore
 
 
 @router.message(Command("list"))

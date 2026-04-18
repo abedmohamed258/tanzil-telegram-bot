@@ -1,5 +1,6 @@
 import importlib.metadata
-from typing import Dict, Type, List
+from typing import Dict, Type
+
 from tanzil.core.base import BaseComponent
 
 
@@ -19,7 +20,8 @@ class ComponentRegistry:
                 component_class = entry_point.load()
                 if issubclass(component_class, BaseComponent):
                     components[entry_point.name] = component_class
-            except Exception as e:
-                # Log registry error - could use the util here but keeping simple for registry logic
+            except Exception:
+                # Log registry error - could use the util here but
+                # keeping simple for registry logic
                 pass
         return components

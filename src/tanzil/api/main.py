@@ -1,9 +1,10 @@
 import os
-from fastapi import FastAPI, Depends, HTTPException, Security, status
-from fastapi.security import APIKeyHeader
 from datetime import datetime, timezone
 
-from tanzil.models.schemas import Task, TaskEvent
+from fastapi import Depends, FastAPI, HTTPException, Security, status
+from fastapi.security import APIKeyHeader
+
+from tanzil.models.schemas import Task
 
 app = FastAPI(title="Tanzil Core API", version="1.0.0")
 

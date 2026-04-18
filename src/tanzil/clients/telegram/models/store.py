@@ -35,7 +35,9 @@ class TaskStore:
     async def save_task(self, task: TelegramDownloadTask):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
-                "INSERT OR REPLACE INTO tasks (task_id, engine_task_id, telegram_user_id, message_id, chat_id, source_url, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT OR REPLACE INTO tasks "
+                "(task_id, engine_task_id, telegram_user_id, message_id, chat_id, "
+                "source_url, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     str(task.task_id),
                     str(task.engine_task_id),
@@ -51,7 +53,9 @@ class TaskStore:
     async def get_task(self, task_id: UUID, telegram_user_id: int):
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute(
-                "SELECT task_id, engine_task_id, telegram_user_id, message_id, chat_id, source_url, status FROM tasks WHERE task_id = ? AND telegram_user_id = ?",
+                "SELECT task_id, engine_task_id, telegram_user_id, message_id, "
+                "chat_id, source_url, status FROM tasks "
+                "WHERE task_id = ? AND telegram_user_id = ?",
                 (str(task_id), telegram_user_id),
             ) as cursor:
                 row = await cursor.fetchone()
@@ -63,7 +67,9 @@ class TaskStore:
         tasks = []
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute(
-                "SELECT task_id, engine_task_id, telegram_user_id, message_id, chat_id, source_url, status FROM tasks WHERE telegram_user_id = ? ORDER BY rowid ASC",
+                "SELECT task_id, engine_task_id, telegram_user_id, message_id, "
+                "chat_id, source_url, status FROM tasks "
+                "WHERE telegram_user_id = ? ORDER BY rowid ASC",
                 (telegram_user_id,),
             ) as cursor:
                 async for row in cursor:

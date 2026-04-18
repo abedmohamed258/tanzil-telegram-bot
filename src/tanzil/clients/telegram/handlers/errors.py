@@ -1,5 +1,6 @@
-from aiogram import Router, types
 import logging
+
+from aiogram import Router, types
 
 router = Router()
 

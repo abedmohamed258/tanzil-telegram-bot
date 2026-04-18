@@ -1,5 +1,6 @@
-import subprocess
 import os
+import subprocess
+
 from tanzil.utils.logging import setup_logging
 
 logger = setup_logging()

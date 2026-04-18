@@ -1,5 +1,6 @@
-import yaml
 from typing import Any, Dict
+
+import yaml
 
 
 def load_yaml(path: str) -> Dict[str, Any]:

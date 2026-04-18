@@ -1,6 +1,7 @@
+from typing import List
+
 import yaml
 from pydantic import BaseModel, Field, SecretStr
-from typing import List
 
 
 class TelegramConfig(BaseModel):

@@ -35,4 +35,10 @@ packages = ["src/tanzil"]
 [tool.ruff]
 line-length = 88
 target-version = "py310"
+
+[tool.ruff.lint]
 select = ["E", "F", "B", "I"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["tanzil"]

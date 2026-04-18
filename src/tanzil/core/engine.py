@@ -4,11 +4,11 @@ import asyncio
 import logging
 from typing import Any, Dict
 
-from tanzil.models.config import EngineConfig
-from tanzil.models.task import ExtractionTask, TaskStatus, EventType
 from tanzil.core.bus import EventBus
 from tanzil.core.config import load_validated_config
 from tanzil.core.registry import TaskRegistry
+from tanzil.models.config import EngineConfig
+from tanzil.models.task import EventType, ExtractionTask, TaskStatus
 
 logger = logging.getLogger("tanzil.engine")
 

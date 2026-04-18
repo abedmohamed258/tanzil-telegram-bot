@@ -1,10 +1,11 @@
 import json
 import socket
 from pathlib import Path
+from typing import Annotated
 
 import typer
 
-from tanzil.cli.server import run_server, SOCKET_PATH
+from tanzil.cli.server import SOCKET_PATH, run_server
 
 app = typer.Typer(help="Tanzil Engine CLI Client")
 
@@ -12,7 +13,8 @@ app = typer.Typer(help="Tanzil Engine CLI Client")
 def send_command(command: dict):
     if not Path(SOCKET_PATH).exists():
         typer.secho(
-            "Error: Server not running. Start it with 'tanzil server --config config.yaml' first.",
+            "Error: Server not running. "
+            "Start it with 'tanzil server --config config.yaml' first.",
             fg=typer.colors.RED,
         )
         raise typer.Exit(1)
@@ -33,7 +35,7 @@ def send_command(command: dict):
 
 
 @app.command()
-def server(config: Path = typer.Option(..., help="Path to YAML config")):
+def server(config: Annotated[Path, typer.Option(help="Path to YAML config")]):
     """Start the Tanzil Engine Server (Daemon)."""
     run_server(str(config))
 

@@ -11,7 +11,8 @@ async def test_task_store_migrates_legacy_schema(tmp_path):
     db_path = tmp_path / "telegram_tasks.db"
     conn = sqlite3.connect(db_path)
     conn.execute(
-        "CREATE TABLE tasks (task_id TEXT PRIMARY KEY, engine_task_id TEXT, message_id INTEGER, chat_id INTEGER, status TEXT)"
+        "CREATE TABLE tasks (task_id TEXT PRIMARY KEY, engine_task_id TEXT, "
+        "message_id INTEGER, chat_id INTEGER, status TEXT)"
     )
     conn.commit()
     conn.close()

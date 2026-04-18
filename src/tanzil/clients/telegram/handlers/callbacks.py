@@ -1,13 +1,12 @@
-from aiogram import Router, F
-from aiogram.types import CallbackQuery
 from uuid import UUID
 
+from aiogram import F, Router
+from aiogram.types import CallbackQuery
+
+from ..models.store import TaskStore
 from ..utils.engine import EngineWrapper
 
 router = Router()
-
-
-from ..models.store import TaskStore
 
 
 @router.callback_query(F.data.startswith("cancel:"))

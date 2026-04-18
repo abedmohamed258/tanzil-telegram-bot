@@ -1,13 +1,11 @@
+
 import typer
-from tanzil.models.profiles import TanzilConfig
-from tanzil.factory.scaffold import create_structure
-from tanzil.factory.isolation_py import setup_python_isolation
-from tanzil.factory.isolation_node import setup_node_isolation
+
 from tanzil.factory.config_manager import ConfigManager
-from tanzil.utils.yaml import save_yaml
+from tanzil.factory.isolation_node import setup_node_isolation
+from tanzil.factory.isolation_py import setup_python_isolation
+from tanzil.factory.scaffold import create_structure
 from tanzil.utils.fs import atomic_write_file
-import os
-import json
 
 app = typer.Typer()
 
@@ -36,13 +34,14 @@ def init(
         config.current_env = env
     else:
         typer.echo(
-            f"Warning: Environment profile '{env}' not found. Defaulting to development."
+            f"Warning: Environment profile '{env}' not found. "
+            "Defaulting to development."
         )
         config.current_env = "development"
 
     # Atomic write for config
-    config_json = config.model_dump_json(indent=2)
-    # Actually use YAML for the config file as per research, but pydantic to yaml is easiest via dict
+    # Actually use YAML for the config file as per research,
+    # but pydantic to yaml is easiest via dict
     import yaml
 
     config_yaml = yaml.dump(config.model_dump(), default_flow_style=False)

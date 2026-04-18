@@ -1,6 +1,7 @@
-from tanzil.models.profiles import TanzilConfig, EnvironmentProfile
-from tanzil.utils.yaml import load_yaml, save_yaml
 import os
+
+from tanzil.models.profiles import TanzilConfig
+from tanzil.utils.yaml import load_yaml, save_yaml
 
 
 class ConfigManager:

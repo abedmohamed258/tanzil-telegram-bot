@@ -1,6 +1,8 @@
 import asyncio
-import aiohttp
 from typing import Any, Dict
+
+import aiohttp
+
 from tanzil.core.base import BaseComponent, ComponentState
 from tanzil.core.events import Event, EventBus
 from tanzil.models.download_task import DownloadTask, TaskStatus
