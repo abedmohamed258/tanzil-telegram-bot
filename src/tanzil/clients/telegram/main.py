@@ -41,6 +41,8 @@ async def main():
 
     dp.update.outer_middleware(WhitelistMiddleware(config))
 
+    await engine_wrapper.resume_tasks()
+
     dp.include_router(commands.router)
     dp.include_router(downloads.router)
     dp.include_router(callbacks.router)

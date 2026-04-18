@@ -33,6 +33,10 @@ class Engine:
         if not self._initialized:
             raise RuntimeError("Engine not initialized")
 
+        # Backpressure: prevent queue flooding
+        if len(self._active_tasks) >= 500:
+            raise RuntimeError("Server busy: too many active tasks")
+
         task = ExtractionTask(
             source_url=payload.get("url"),
             owner_id=payload.get("owner_id"),
@@ -159,5 +163,7 @@ class Engine:
                 t.cancel()
             await asyncio.gather(*self._active_tasks.values(), return_exceptions=True)
 
+        # Allow time for cleanup events to be processed
+        await asyncio.sleep(0.1)
         await self.bus.stop()
         self._initialized = False

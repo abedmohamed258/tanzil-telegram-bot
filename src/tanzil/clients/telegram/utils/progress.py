@@ -5,6 +5,7 @@ import time
 from uuid import UUID
 
 from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 logger = logging.getLogger("tanzil.telegram.progress")
@@ -37,6 +38,18 @@ class ProgressReporter:
                 text, chat_id=chat_id, message_id=message_id
             )
             self.last_update[throttle_key] = current_time
+        except TelegramBadRequest as exc:
+            if "message is not modified" in exc.message:
+                return
+            if "message to edit not found" in exc.message:
+                self.last_update.pop(throttle_key, None)
+                return
+            logger.warning(
+                "Telegram API error for %s/%s: %s",
+                chat_id,
+                message_id,
+                exc,
+            )
         except Exception as exc:
             logger.warning(
                 "Failed to update progress message %s/%s: %s",

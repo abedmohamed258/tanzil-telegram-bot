@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import json
-from pathlib import Path
 from typing import Any, Optional
 from uuid import UUID
+
+import aiosqlite
 
 from ..models.schemas import TelegramDownloadTask
 from ..models.store import TaskStore
@@ -13,12 +14,14 @@ from ..models.store import TaskStore
 class EngineWrapper:
     def __init__(
         self,
-        socket_path: str,
+        host: str,
+        port: int,
         store: TaskStore,
         progress_reporter: Optional[Any] = None,
-        poll_interval: float = 0.2,
+        poll_interval: float = 1.0,
     ):
-        self.socket_path = socket_path
+        self.host = host
+        self.port = port
         self.store = store
         self.progress_reporter = progress_reporter
         self.poll_interval = poll_interval
@@ -31,52 +34,36 @@ class EngineWrapper:
                 "payload": {"url": url, "owner_id": telegram_user_id},
             }
         )
-        if "error" in response:
-            raise RuntimeError(response["error"])
+        if response.get("status") == "error":
+            raise RuntimeError(response.get("message", "Unknown error"))
         return UUID(response["task_id"])
 
-    async def cancel_download(self, engine_task_id: UUID):
-        response = await self._send_command(
-            {"command": "cancel", "task_id": str(engine_task_id)}
-        )
-        if "error" in response:
-            raise RuntimeError(response["error"])
-
-        monitor_task = self.active_tasks.pop(str(engine_task_id), None)
-        if monitor_task:
-            monitor_task.cancel()
-
-        return bool(response.get("cancelled"))
-
-    async def track_task(self, task: TelegramDownloadTask):
-        engine_task_id = str(task.engine_task_id)
-        existing = self.active_tasks.pop(engine_task_id, None)
-        if existing:
-            existing.cancel()
-
-        self.active_tasks[engine_task_id] = asyncio.create_task(
-            self._monitor_task(task), name=f"telegram-monitor-{engine_task_id}"
-        )
-
-    async def shutdown(self):
-        if not self.active_tasks:
-            return
-
-        tasks = list(self.active_tasks.values())
-        self.active_tasks.clear()
-        for task in tasks:
-            task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
+    async def resume_tasks(self):
+        """Resume monitoring for all active tasks in the database."""
+        # Note: list_tasks currently requires a user_id.
+        # We need a global task list for startup recovery.
+        # For now, we rely on the specific database instance.
+        async with aiosqlite.connect(self.store.db_path) as db:
+            async with db.execute(
+                "SELECT task_id, engine_task_id, telegram_user_id, message_id, "
+                "chat_id, source_url, status FROM tasks"
+            ) as cursor:
+                async for row in cursor:
+                    task = self.store._row_to_task(row)
+                    await self.track_task(task)
 
     async def _send_command(self, command: dict[str, Any]) -> dict[str, Any]:
-        if not Path(self.socket_path).exists():
-            raise RuntimeError(f"Core socket not found: {self.socket_path}")
+        try:
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(self.host, self.port), timeout=5.0
+            )
+        except asyncio.TimeoutError:
+            raise RuntimeError(f"Connection timeout to core at {self.host}:{self.port}")
 
-        reader, writer = await asyncio.open_unix_connection(self.socket_path)
         try:
             writer.write((json.dumps(command) + "\n").encode())
             await writer.drain()
-            data = await reader.readline()
+            data = await asyncio.wait_for(reader.readline(), timeout=5.0)
         finally:
             writer.close()
             await writer.wait_closed()
