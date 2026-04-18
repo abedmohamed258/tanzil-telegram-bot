@@ -1,0 +1,6 @@
+- [x] Research dynamic component registration (plugins vs dynamic imports)
+- [x] Research lightweight async Pub/Sub patterns for asyncio
+- [x] Research standard YAML configuration patterns with schema validation
+- [x] Research async state machine lifecycle management
+- [x] Research parallel file downloads with asyncio
+- [x] Consolidate findings into specs/003-core-engine-a/research.md

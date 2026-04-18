@@ -1,0 +1,73 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install . pytest pytest-asyncio pytest-cov ruff
+      - name: Lint
+        run: ruff check .
+      - name: Test
+        run: pytest --cov=src --cov-fail-under=80
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/bot.Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: BOT_TOKEN,IMAGE_NAME,REGISTRY
+          script: |
+            mkdir -p ~/tanzil
+            cd ~/tanzil
+            # Pull compose file from repo
+            curl -s https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml > docker-compose.yml
+            # Inject env
+            echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" > .env
+            echo "IMAGE_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> .env
+            # Login and Pull
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+            docker-compose pull
+            docker-compose up -d --remove-orphans
+            docker-compose ps

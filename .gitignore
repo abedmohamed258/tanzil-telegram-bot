@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.env*
+.tanzil/venv/
+.tanzil/state.json
+__pycache__/
+*.pyc
+*.egg-info/
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/

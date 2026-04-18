@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+# Tanzil Environment-Aware CLI Proxy
+# Responsibility: Locate repo root and invoke the isolated venv
+
+# 1. Resolve repo root relative to this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# 2. Check for local venv
+VENV_PYTHON="${REPO_ROOT}/.tanzil/venv/bin/python3"
+if [ ! -f "$VENV_PYTHON" ]; then
+    # Fallback to system python only for init
+    if [[ "$1" == "init" ]]; then
+        PYTHON_EXEC="python3"
+    else
+        echo "Error: Tanzil environment not initialized. Run ./scripts/init.sh first."
+        exit 1
+    fi
+else
+    PYTHON_EXEC="$VENV_PYTHON"
+fi
+
+# 3. Execute with core package on PYTHONPATH
+# (Optional once editable install is done, but safe to keep)
+export PYTHONPATH="${REPO_ROOT}/packages/python-core"
+"$PYTHON_EXEC" -m tanzil.cli.main "$@"

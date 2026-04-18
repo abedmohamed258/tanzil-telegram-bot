@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - nginx_certs:/etc/nginx/certs
+      - nginx_vhost:/etc/nginx/vhost.d
+      - nginx_html:/usr/share/nginx/html
+    restart: always
+    networks:
+      - proxy-tier
+
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: nginx-proxy-acme
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nginx_acme:/etc/acme.sh
+    environment:
+      - DEFAULT_EMAIL=${LETSENCRYPT_EMAIL}
+    restart: always
+    depends_on:
+      - nginx-proxy
+    networks:
+      - proxy-tier
+
+  core:
+    build:
+      context: .
+      dockerfile: docker/core/Dockerfile
+    container_name: tanzil-core
+    environment:
+      - CORE_API_TOKEN=${CORE_API_TOKEN}
+      - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - VIRTUAL_PORT=8000
+      - LETSENCRYPT_HOST=${LETSENCRYPT_HOST}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 1G
+    volumes:
+      - tanzil_downloads:/app/downloads
+      - tanzil_config:/app/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+    networks:
+      - proxy-tier
+    restart: always
+
+  bot:
+    build:
+      context: .
+      dockerfile: docker/bot/Dockerfile
+    container_name: tanzil-bot
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - CORE_URL=http://core:8000
+      - CORE_TOKEN=${CORE_API_TOKEN}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET}
+    depends_on:
+      core:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    networks:
+      - proxy-tier
+    restart: always
+
+networks:
+  proxy-tier:
+
+volumes:
+  tanzil_downloads:
+  tanzil_config:
+  nginx_certs:
+  nginx_vhost:
+  nginx_html:
+  nginx_acme:

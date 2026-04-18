@@ -1,0 +1,11 @@
+{
+  "name": "tanzil-root",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0",
+    "eslint": "^8.0.0"
+  }
+}

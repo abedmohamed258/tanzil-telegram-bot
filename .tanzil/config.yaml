@@ -1,0 +1,19 @@
+current_env: production
+profiles:
+- is_isolated: true
+  name: development
+  node_version: '>=18'
+  python_version: '>=3.10'
+  variables: {}
+- is_isolated: true
+  name: testing
+  node_version: '>=18'
+  python_version: '>=3.10'
+  variables: {}
+- is_isolated: true
+  name: production
+  node_version: '>=18'
+  python_version: '>=3.10'
+  variables: {}
+project_name: Production Tanzil
+root_path: .
